@@ -1,0 +1,41 @@
+package:
+  name: torchray
+  version: {{ VER }}
+
+source:
+  git_rev: v{{ VER }}
+  git_url: git@github.com:facebookresearch/TorchRay.git
+
+requirements:
+  build:
+    - python >=3.4
+
+  run:
+    - python >=3.4
+    - pytorch >=1.1.0
+    - torchvision >=0.3.0
+    - pycocotools >=2.0.0
+    - matplotlib
+
+
+build:
+  noarch: python
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+about:
+  home: https://github.com/facebookresearch/TorchRay
+  license: Attribution-NonCommercial 4.0 International
+  summary: 'A PyTorch library for visualzing convnets.'
+  description: |
+    The *TorchRay* package implements several visualization methods for deep
+    convolutional neural networks using PyTorch. In this release, TorchRay focuses
+    on *attribution*, namely the problem of determining which part of the input,
+    usually an image, is responsible for the value computed by a neural network.
+
+    *TorchRay* is research oriented: in addition to implementing well known
+    techniques form the literature, it provides code for reproducing results that
+    appear in several papers, and can thus be a tool for *reproducible research*.
+  dev_url: https://github.com/facebookresearch/TorchRay
+  doc_url: https://facebookresearch.github.io/TorchRay
+  doc_source_url: https://github.com/facebookresearch/TorchRay

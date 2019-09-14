@@ -1,0 +1,10 @@
+__pycache__
+.ipynb_checkpoints
+.vscode/
+.vscode/.ropeproject
+.vscode/tags
+*.pyc
+data
+dist
+docs/html
+MANIFEST

@@ -1,0 +1,13 @@
+include CHANGELOG.md
+include CODE_OF_CONDUCT.md
+include CONTRIBUTING.md
+include LICENSE
+include README.md
+include torchray/VERSION
+include docs
+include docs/html
+include scripts
+include scripts/torchrayrc
+recursive-include docs/html *.html *.png *.gif *.js *.css *.eot *.ttf *.woff *.woff2 *.svg *.inv *.txt
+recursive-include torchray *.py *.txt
+recursive-include scripts *.sh

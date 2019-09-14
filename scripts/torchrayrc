@@ -1,0 +1,16 @@
+{
+  "mongo": {
+    "server": "mongod",
+    "hostname": "localhost",
+    "port": 27017,
+    "database": "./data/db"
+  },
+  "benchmark": {
+    "voc_dir": "./data/datasets/voc",
+    "coco_dir": "./data/datasets/coco",
+    "coco_anno_dir": "./data/datasets/coco/annotations",
+    "imagenet_dir": "./data/datasets/imagenet",
+    "models_dir": "./data/models",
+    "experiments_dir": "./data"
+  }
+}
