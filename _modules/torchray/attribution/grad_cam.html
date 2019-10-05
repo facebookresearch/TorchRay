@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.attribution.grad_cam &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>torchray.attribution.grad_cam</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.attribution.grad_cam</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides an implementation of the *Grad-CAM* method of [GRADCAM]_</span>
+<span class="sd">for saliency visualization. The simplest interface is given by the</span>
+<span class="sd">:func:`grad_cam` function:</span>
+
+<span class="sd">.. literalinclude:: ../examples/grad_cam.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+<span class="sd">Alternatively, it is possible to run the method &quot;manually&quot;. Grad-CAM backprop</span>
+<span class="sd">is a variant of the gradient method, applied at an intermediate layer:</span>
+
+<span class="sd">.. literalinclude:: ../examples/grad_cam_manual.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+<span class="sd">Note that the function :func:`gradient_to_grad_cam_saliency` is used to convert</span>
+<span class="sd">activations and gradients to a saliency map.</span>
+
+<span class="sd">See also :ref:`backprop` for further examples and discussion.</span>
+
+<span class="sd">Theory</span>
+<span class="sd">~~~~~~</span>
+
+<span class="sd">Grad-CAM can be seen as a variant of the *gradient* method</span>
+<span class="sd">(:mod:`torchray.attribution.gradient`) with two differences:</span>
+
+<span class="sd">1. The saliency is measured at an intermediate layer of the network, usually at</span>
+<span class="sd">   the output of the last convolutional layer.</span>
+
+<span class="sd">2. Saliency is defined as the clamped product of forward activation and</span>
+<span class="sd">   backward gradient at that layer.</span>
+
+<span class="sd">References:</span>
+
+<span class="sd">    .. [GRADCAM] Ramprasaath R. Selvaraju, Abhishek Das, Ramakrishna Vedantam,</span>
+<span class="sd">                 Michael Cogswell, Devi Parikh and Dhruv Batra,</span>
+<span class="sd">                 *Visual Explanations from Deep Networks via Gradient-based</span>
+<span class="sd">                 Localization,*</span>
+<span class="sd">                 ICCV 2017,</span>
+<span class="sd">                 `&lt;http://openaccess.thecvf.com/content_iccv_2017/html/Selvaraju_Grad-CAM_Visual_Explanations_ICCV_2017_paper.html&gt;`__.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;grad_cam&quot;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">saliency</span>
+
+
+<span class="k">def</span> <span class="nf">gradient_to_grad_cam_saliency</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert activation and gradient to a Grad-CAM saliency map.</span>
+
+<span class="sd">    The tensor :attr:`x` must have a valid gradient ``x.grad``.</span>
+<span class="sd">    The function then computes the saliency map :math:`s`: given by:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{n1u} = \max\{0, \sum_{c}x_{ncu}\cdot dx_{ncu}\}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`torch.Tensor`): activation tensor with a valid gradient.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: saliency map.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Apply global average pooling (GAP) to gradient.</span>
+    <span class="n">grad_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Linearly combine activations and GAP gradient weights.</span>
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">grad_weight</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Apply ReLU to visualization.</span>
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">saliency_map</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">saliency_map</span>
+
+
+<div class="viewcode-block" id="grad_cam"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.grad_cam.grad_cam">[docs]</a><span class="k">def</span> <span class="nf">grad_cam</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span>
+             <span class="n">saliency_layer</span><span class="p">,</span>
+             <span class="n">gradient_to_saliency</span><span class="o">=</span><span class="n">gradient_to_grad_cam_saliency</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Grad-CAM method.</span>
+
+<span class="sd">    The function takes the same arguments as :func:`.common.saliency`, with</span>
+<span class="sd">    the defaults required to apply the Grad-CAM method, and supports the</span>
+<span class="sd">    same arguments and return values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">saliency</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                    <span class="n">saliency_layer</span><span class="o">=</span><span class="n">saliency_layer</span><span class="p">,</span>
+                    <span class="n">gradient_to_saliency</span><span class="o">=</span><span class="n">gradient_to_saliency</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

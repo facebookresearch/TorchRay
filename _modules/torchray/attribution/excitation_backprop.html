@@ -1,0 +1,937 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.attribution.excitation_backprop &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>torchray.attribution.excitation_backprop</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.attribution.excitation_backprop</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides an implementation of the *excitation backpropagation*</span>
+<span class="sd">method of [EBP]_  for saliency visualization. It is a backpropagation method,</span>
+<span class="sd">and thus works by changing the definition of the backward functions of some</span>
+<span class="sd">layers.</span>
+
+<span class="sd">In simple cases, the :func:`excitation_backprop` function can be used to obtain</span>
+<span class="sd">the required visualization, as in the following example:</span>
+
+<span class="sd">.. literalinclude:: ../examples/excitation_backprop.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+
+<span class="sd">Alternatively, you can explicitly use the :class:`ExcitationBackpropContext`,</span>
+<span class="sd">as follows:</span>
+
+<span class="sd">.. literalinclude:: ../examples/excitation_backprop_manual.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+<span class="sd">See also :ref:`backprop` for further examples and discussion.</span>
+
+<span class="sd">Contrastive variant</span>
+<span class="sd">~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="sd">The contrastive variant of excitation backprop passes the data twice through</span>
+<span class="sd">the network. The first pass is used to obtain &quot;contrast&quot; activations at some</span>
+<span class="sd">intermediate layer ``contrast_layer``. The latter is obtained by flipping the</span>
+<span class="sd">sign of the last classification layer ``classifier_layer``. The visualization</span>
+<span class="sd">is then obtained at some earlier ``input_layer``. The function</span>
+<span class="sd">:func:`contrastive_excitation_backprop` can be used to compute this saliency:</span>
+
+<span class="sd">.. literalinclude:: ../examples/contrastive_excitation_backprop.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+<span class="sd">This can also be done &quot;manually&quot;, as follows:</span>
+
+<span class="sd">.. literalinclude:: ../examples/contrastive_excitation_backprop_manual.py</span>
+<span class="sd">   :language: python</span>
+<span class="sd">   :linenos:</span>
+
+<span class="sd">Theory</span>
+<span class="sd">~~~~~~</span>
+
+<span class="sd">Excitation backprop modifies the backward version of all linear layers in the</span>
+<span class="sd">network. For a simple 1D case, let the forward layer be given by:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">     y_i = \sum_{j=1}^N w_{ij} x_j</span>
+
+<span class="sd">where :math:`x \in \mathbb{R}^B` is the input and</span>
+<span class="sd">:math:`w \in\mathbb{R}^{M \times N}` the weight matrix. On the way back, if</span>
+<span class="sd">:math:`p \in \mathbb{R}^{N}` is the output pseudo-gradient, the input</span>
+<span class="sd">pseudo-gradient :math:`p&#39;` is given by:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">    p&#39;_j =</span>
+<span class="sd">    \sum_{i=1}^N</span>
+<span class="sd">        \frac</span>
+<span class="sd">        {w^+_{ij} x_j}</span>
+<span class="sd">        {\sum_{k=1}^ Nw^+_{ik} x_k} p_i</span>
+<span class="sd">    \quad\text{where}\quad</span>
+<span class="sd">    w^+_{ij} = \max\{0, w_{ij}\}</span>
+<span class="sd">    :label: linear-back</span>
+
+<span class="sd">Note that [EBP]_ assumes that the input activations :math:`x` are always</span>
+<span class="sd">non-negative. This is often true, as linear layer are preceded by non-negative</span>
+<span class="sd">activation functions such as ReLU, so there is nothing to be done.</span>
+
+<span class="sd">Note also that we can rearrange :eq:`linear-back` as</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">    p&#39;_j =</span>
+<span class="sd">    x_j</span>
+<span class="sd">    \sum_{i=1}^N</span>
+<span class="sd">        w^+_{ij}</span>
+<span class="sd">        \hat p_i,</span>
+<span class="sd">    \quad\text{where}\quad</span>
+<span class="sd">    \hat p_i =</span>
+<span class="sd">        \frac</span>
+<span class="sd">        {p_i}</span>
+<span class="sd">        {\sum_{k=1}^ Nw^+_{ik} x_k}.</span>
+
+
+<span class="sd">Here :math:`\hat p` is a normalized version of the output pseudo-gradient and</span>
+<span class="sd">the summation is the operation performed by the standard backward function for</span>
+<span class="sd">the linear layer given as input :math:`\hat p`.</span>
+
+<span class="sd">All linear layers, including convolution and deconvolution layers as well as</span>
+<span class="sd">average pooling layers, can be processed in this manner. In general, let</span>
+<span class="sd">:math:`y = f(x,w)` be a linear layer. In order to compute :eq:`linear-back`, we</span>
+<span class="sd">can expand it as:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">    p&#39; = x \odot f^*(x, w^+, p \oslash f(x, w^+))</span>
+
+<span class="sd">where :math:`f^*(x, w, p)` is the standard backward function (vector-Jacobian</span>
+<span class="sd">product) for the linear layer :math:`f` and :math:`\odot` and :math:`\oslash`</span>
+<span class="sd">denote element-wise multiplication and division, respectively.</span>
+
+<span class="sd">The **contrastive variant** of excitation backprop is similar, but uses the</span>
+<span class="sd">idea of contrasting the excitation for one class with the ones of all the</span>
+<span class="sd">others.</span>
+
+<span class="sd">In order to obtain the &quot;contrast&quot; signal, excitation backprop is run as before</span>
+<span class="sd">except for the last *classification* linear layer. In order to backpropagate</span>
+<span class="sd">the excitation for this layer only, the weight parameter :math:`w` is replaced</span>
+<span class="sd">with its opposite :math:`-w`. Then, the excitations are backpropagated to an</span>
+<span class="sd">intermediate *contrast* linear layer as normal.</span>
+
+<span class="sd">Once the contrast activations have been obtained, excitation backprop is run</span>
+<span class="sd">again, this time with the &quot;default&quot; weights even for the last linear layer.</span>
+<span class="sd">However, during backpropagation, when the contrast layer is reached again, the</span>
+<span class="sd">contrast is subtracted from the excitations. Then, the excitations are</span>
+<span class="sd">propagated backward as usual.</span>
+
+<span class="sd">References:</span>
+
+<span class="sd">    .. [EBP] Jianming Zhang, Zhe Lin, Jonathan Brandt, Xiaohui Shen, Stan</span>
+<span class="sd">             Sclaroff, *Top-down Neural Attention by Excitation Backprop*,</span>
+<span class="sd">             ECCV 2016, `&lt;https://arxiv.org/abs/1608.00507&gt;`__.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;contrastive_excitation_backprop&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;eltwise_sum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;excitation_backprop&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ExcitationBackpropContext&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="k">import</span> <span class="n">Function</span>
+<span class="kn">from</span> <span class="nn">torchvision.models.resnet</span> <span class="k">import</span> <span class="n">ResNet</span><span class="p">,</span> <span class="n">Bottleneck</span><span class="p">,</span> <span class="n">BasicBlock</span>
+
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">Patch</span><span class="p">,</span> <span class="n">Probe</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">attach_debug_probes</span><span class="p">,</span> <span class="n">get_backward_gradient</span><span class="p">,</span> <span class="n">get_module</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">saliency</span><span class="p">,</span> <span class="n">resize_saliency</span>
+
+
+<span class="k">class</span> <span class="nc">EltwiseSumFunction</span><span class="p">(</span><span class="n">Function</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implementation of a skip connection (i.e., element-wise sum function)</span>
+<span class="sd">    as a :class:`torch.autograd.Function`. This is necessary for patching</span>
+<span class="sd">    the skip connection as a :class:`torch.nn.Module` object (i.e.,</span>
+<span class="sd">    :class:`EltwiseSum`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">):</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)):</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">grad_output</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+
+<span class="c1"># Alias for :class:`EltwiseSumFunction`.</span>
+<span class="n">eltwise_sum</span> <span class="o">=</span> <span class="n">EltwiseSumFunction</span><span class="o">.</span><span class="n">apply</span>
+
+
+<span class="k">class</span> <span class="nc">EltwiseSum</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implemention of skip connection (i.e., element-wise sum) as a</span>
+<span class="sd">    :class:`torch.nn.Module` (this is necessary to be able to patch the</span>
+<span class="sd">    skip connection).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">eltwise_sum</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">update_resnet</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update a ResNet model to use :class:`EltwiseSum` for the skip</span>
+<span class="sd">    connection.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torchvision.models.resnet.ResNet`): ResNet model.</span>
+<span class="sd">        debug (bool): If True, print debug statements.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        model (:class:`torchvision.models.resnet.ResNet`): ResNet model</span>
+<span class="sd">        that uses :class:`EltwiseSum` for the skip connections. The forward</span>
+<span class="sd">        functions of :class:`torchvision.models.resnet.BasicBlock` and</span>
+<span class="sd">        :class:`torch.models.resnet.Bottleneck` are modified.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ResNet</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">bottleneck_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">identity</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn1</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn2</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv3</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn3</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">identity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="nf">basicblock_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">identity</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn1</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bn2</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">identity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">for</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_modules</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">Bottleneck</span><span class="p">):</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">skip</span> <span class="o">=</span> <span class="n">EltwiseSum</span><span class="p">()</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">bottleneck_forward</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">BasicBlock</span><span class="p">):</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">skip</span> <span class="o">=</span> <span class="n">EltwiseSum</span><span class="p">()</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">basicblock_forward</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Adding EltwiseSum as skip connection in </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">module_name</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">model</span>
+
+
+<div class="viewcode-block" id="ExcitationBackpropContext"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.excitation_backprop.ExcitationBackpropContext">[docs]</a><span class="k">class</span> <span class="nc">ExcitationBackpropContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Context to use Excitation Backpropagation rules.&quot;&quot;&quot;</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_patch_conv</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">enable</span><span class="p">,</span> <span class="n">debug</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Patch conv functions to use excitation backprop rules.</span>
+
+<span class="sd">        Replicated implementation provided in:</span>
+<span class="sd">        https://github.com/jimmie33/Caffe-ExcitationBP/blob/master/src/caffe/layers/conv_layer.cpp</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_name (str): name of function to patch (i.e.,</span>
+<span class="sd">                ``&#39;torch.nn.functional.conv_1d&#39;``).</span>
+<span class="sd">            enable (bool): If True, enable excitation backprop rules.</span>
+<span class="sd">            debug (bool): If True, print debug statements.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`.common.Patch`: object that patches the function with</span>
+<span class="sd">            the name :attr:`target_name` with a new callable that implements</span>
+<span class="sd">            the excitation backprop rules for the conv function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">Patch</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">conv</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+            <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EBP &quot;</span> <span class="o">+</span> <span class="n">target_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">conv</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+                <span class="n">x</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">needs_input_grad</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">return</span> <span class="n">x</span>
+
+            <span class="n">inputs_</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">grad_inputs_</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="n">subset</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">needs_input_grad</span><span class="p">)</span> <span class="k">if</span> <span class="n">g</span><span class="p">]</span>
+            <span class="n">inputs_subset</span> <span class="o">=</span> <span class="p">[</span><span class="n">inputs_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">]</span>
+
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">enable_grad</span><span class="p">():</span>
+                <span class="c1"># EBP changes only the gradients w.r.t. inputs_[0]. We also</span>
+                <span class="c1"># compute the gradients w.r.t. the parameters if needed,</span>
+                <span class="c1"># although they are trash. Perhaps it would be better to set</span>
+                <span class="c1"># them to None?</span>
+                <span class="c1">#</span>
+                <span class="c1"># The expectation is that the input to the conv layer is</span>
+                <span class="c1"># non-negative, which is typical for all but the first layer</span>
+                <span class="c1"># due to the ReLUs. Some other implementation makes sure by</span>
+                <span class="c1"># clamping inputs_[0].</span>
+
+                <span class="c1"># 1. set weight W+ to be non-negative and disable bias.</span>
+                <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+                    <span class="nb">input</span> <span class="o">=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">weight</span> <span class="o">=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">bias</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">input</span> <span class="o">=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">weight</span> <span class="o">=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">bias</span> <span class="o">=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+                <span class="c1"># 2. do forward pass.</span>
+                <span class="n">output_ebp</span> <span class="o">=</span> <span class="n">conv</span><span class="p">(</span>
+                    <span class="nb">input</span><span class="p">,</span>
+                    <span class="n">weight</span><span class="p">,</span>
+                    <span class="n">bias</span><span class="p">,</span>
+                    <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span>
+                <span class="p">)</span>
+
+                <span class="c1"># 3. normalize gradient by the output of the forward pass.</span>
+                <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+                    <span class="n">grad_output</span> <span class="o">=</span> <span class="n">grad_output</span> <span class="o">/</span> <span class="p">(</span><span class="n">output_ebp</span> <span class="o">+</span> <span class="mf">1e-20</span><span class="p">)</span>
+
+                <span class="c1"># 4. do backward pass.</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span>
+                    <span class="n">output_ebp</span><span class="p">,</span> <span class="n">inputs_subset</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">,</span> <span class="n">only_inputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">subset</span><span class="p">):</span>
+                    <span class="n">grad_inputs_</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="c1"># 5. multiply gradient with the layer&#39;s input.</span>
+                <span class="k">if</span> <span class="n">ctx</span><span class="o">.</span><span class="n">needs_input_grad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">enable</span><span class="p">:</span>
+                    <span class="n">grad_inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="n">inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="k">return</span> <span class="p">(</span><span class="n">grad_inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">grad_inputs_</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">grad_inputs_</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                        <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">autograd_conv</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">&#39;EBP_&#39;</span> <span class="o">+</span> <span class="n">attribute</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">,),</span> <span class="p">{</span>
+            <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">forward</span><span class="p">),</span>
+            <span class="s1">&#39;backward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">backward</span><span class="p">),</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">Patch</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">autograd_conv</span><span class="o">.</span><span class="n">apply</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_patch_pool</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">enable</span><span class="p">,</span> <span class="n">debug</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Patch pool functions to use excitation backprop rules.</span>
+
+<span class="sd">        Replicated implementation provided in:</span>
+<span class="sd">        https://github.com/jimmie33/Caffe-ExcitationBP/blob/master/src/caffe/layers/pooling_layer.cpp</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_name (str): name of function to patch (i.e.,</span>
+<span class="sd">                ``&#39;torch.nn.functional.avg_pool1d&#39;``).</span>
+<span class="sd">            enable (bool): If True, enable excitation backprop rules.</span>
+<span class="sd">            debug (bool): If True, print debug statements.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`.common.Patch`: object that patches the function with</span>
+<span class="sd">            the name :attr:`target_name` with a new callable that implements</span>
+<span class="sd">            the excitation backprop rules for the pool function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">Patch</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+            <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;EBP &#39;</span> <span class="o">+</span> <span class="n">target_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">pool</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ctx</span><span class="o">.</span><span class="n">needs_input_grad</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">input_</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+            <span class="n">input_</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">enable_grad</span><span class="p">():</span>
+                <span class="c1"># 1. forward pass.</span>
+                <span class="n">output_ebp</span> <span class="o">=</span> <span class="n">pool</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="c1"># 2. normalize gradient by the output of the forward pass.</span>
+                <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+                    <span class="n">grad_output</span> <span class="o">=</span> <span class="n">grad_output</span> <span class="o">/</span> <span class="p">(</span><span class="n">output_ebp</span> <span class="o">+</span> <span class="mf">1e-20</span><span class="p">)</span>
+
+                <span class="c1"># 3. do backward pass.</span>
+                <span class="n">grad_input_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span>
+                    <span class="n">output_ebp</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">,</span> <span class="n">only_inputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+                <span class="c1"># 4. multiply gradient with layer&#39;s input.</span>
+                <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+                    <span class="n">grad_input_</span> <span class="o">*=</span> <span class="n">input_</span>
+                <span class="k">return</span> <span class="n">grad_input_</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">autograd_pool</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">&#39;EBP_&#39;</span> <span class="o">+</span> <span class="n">attribute</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">,),</span> <span class="p">{</span>
+            <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">forward</span><span class="p">),</span>
+            <span class="s1">&#39;backward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">backward</span><span class="p">),</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">Patch</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">autograd_pool</span><span class="o">.</span><span class="n">apply</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_patch_norm</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">enable</span><span class="p">,</span> <span class="n">debug</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Patch normalization functions (e.g., batch norm) to use excitation</span>
+<span class="sd">        backprop rules.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_name (str): name of function to patch (i.e.,</span>
+<span class="sd">                ``&#39;torch.nn.functional.avg_pool1d&#39;``).</span>
+<span class="sd">            enable (bool): If True, enable excitation backprop rules.</span>
+<span class="sd">            debug (bool): If True, print debug statements.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`.common.Patch`: object that patches the function with</span>
+<span class="sd">            the name :attr:`target_name` with a new callable that implements</span>
+<span class="sd">            the excitation backprop rules for the normalization function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">Patch</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+            <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;EBP &#39;</span> <span class="o">+</span> <span class="n">target_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">norm</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">enable</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">grad_output</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+            <span class="n">input_</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span>
+            <span class="n">input_</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">enable_grad</span><span class="p">():</span>
+                <span class="n">output_ebp</span> <span class="o">=</span> <span class="n">norm</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="n">ctx</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">ctx</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">grad_input_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span>
+                    <span class="n">output_ebp</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">,</span> <span class="n">only_inputs</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">return</span> <span class="n">grad_input_</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">autograd_norm</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">&#39;EBP_&#39;</span> <span class="o">+</span> <span class="n">attribute</span><span class="p">,</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">,),</span> <span class="p">{</span>
+            <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">forward</span><span class="p">),</span>
+            <span class="s1">&#39;backward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">backward</span><span class="p">),</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">Patch</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">autograd_norm</span><span class="o">.</span><span class="n">apply</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_patch_eltwise_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">enable</span><span class="p">,</span> <span class="n">debug</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Patch element-wise sum function (e.g., skip connection) to use</span>
+<span class="sd">        excitation backprop rules.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_name (str): name of function to patch (i.e.,</span>
+<span class="sd">                ``&#39;torch.nn.functional.avg_pool1d&#39;``).</span>
+<span class="sd">            enable (bool): If True, enable excitation backprop rules.</span>
+<span class="sd">            debug (bool): If True, print debug statements.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`.common.Patch`: object that patches the function with</span>
+<span class="sd">            the name :attr:`target_name` with a new callable that implements</span>
+<span class="sd">            the excitation backprop rules for the element-wise sum function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">Patch</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="n">eltwise_sum_f</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">):</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;EBP &quot;</span> <span class="o">+</span> <span class="n">target_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">eltwise_sum_f</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">enable</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">grad_output</span><span class="p">,</span> <span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">))]</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">eltwise_sum_f</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+            <span class="n">grad_outputs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="nb">input</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+                <span class="n">grad_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">input</span> <span class="o">/</span> <span class="n">output</span> <span class="o">*</span> <span class="n">grad_output</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">grad_outputs</span><span class="p">)</span>
+
+        <span class="n">autograd_eltwise_sum</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="s1">&#39;EBP_&#39;</span> <span class="o">+</span> <span class="n">attribute</span><span class="p">,</span>
+                                    <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">,),</span> <span class="p">{</span>
+                                        <span class="s1">&#39;forward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">forward</span><span class="p">),</span>
+                                        <span class="s1">&#39;backward&#39;</span><span class="p">:</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">backward</span><span class="p">),</span>
+                                    <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">Patch</span><span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="n">autograd_eltwise_sum</span><span class="o">.</span><span class="n">apply</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable</span> <span class="o">=</span> <span class="n">enable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="n">debug</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Patch torch functions for convolutional, linear, average pooling,</span>
+        <span class="c1"># and adaptive average pooling layers. Also patch eltwise_sum function</span>
+        <span class="c1"># (for skip connection in resnet models).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patches</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_conv</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.conv1d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_conv</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.conv2d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_conv</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.conv3d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_conv</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.linear&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.avg_pool1d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.avg_pool2d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.avg_pool3d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.adaptive_avg_pool1d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.adaptive_avg_pool2d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_pool</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.adaptive_avg_pool3d&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_norm</span><span class="p">(</span><span class="s1">&#39;torch.nn.functional.batch_norm&#39;</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_patch_eltwise_sum</span><span class="p">(</span>
+                <span class="s1">&#39;torchray.attribution.excitation_backprop.eltwise_sum&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+            <span class="n">patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># re-raise any exception</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_classifier_layer</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get the classifier layer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): a model.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (:class:`torch.nn.Module`, str): tuple of the last layer and its name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get last layer with weight parameters.</span>
+    <span class="n">last_layer_name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_layer</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">())[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="s1">&#39;.weight&#39;</span> <span class="ow">in</span> <span class="n">parameter_name</span><span class="p">:</span>
+            <span class="n">last_layer_name</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parameter_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.weight&#39;</span><span class="p">)</span>
+            <span class="n">last_layer</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">last_layer_name</span><span class="p">)</span>
+            <span class="c1"># Check that last layer is convolutional or linear.</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">last_layer</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_layer</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_layer</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv3d</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_layer</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">)):</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">last_layer_name</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">last_layer</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">last_layer_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">last_layer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">last_layer</span><span class="p">,</span> <span class="n">last_layer_name</span>
+
+
+<span class="k">def</span> <span class="nf">gradient_to_excitation_backprop_saliency</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a gradient to an excitation backprop saliency map.</span>
+
+<span class="sd">    The tensor :attr:`x` must have a valid gradient ``x.grad``.</span>
+<span class="sd">    The function then computes the excitation backprop saliency map :math:`s`</span>
+<span class="sd">    given by:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{n,1,u} = \max(\sum_{0 \leq c &lt; C} dx_{ncu}, 0)</span>
+
+<span class="sd">    where :math:`n` is the instance index, :math:`c` the channel</span>
+<span class="sd">    index and :math:`u` the spatial multi-index (usually of dimension 2 for</span>
+<span class="sd">    images).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`torch.Tensor`): activation with gradient.</span>
+
+<span class="sd">    Return:</span>
+<span class="sd">        :class:`torch.Tensor`: saliency map.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">gradient_to_contrastive_excitation_backprop_saliency</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a gradient to an contrastive excitation backprop saliency map.</span>
+
+<span class="sd">    The tensor :attr:`x` must have a valid gradient ``x.grad``.</span>
+<span class="sd">    The function then computes the excitation backprop saliency map :math:`s`</span>
+<span class="sd">    given by:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{n,1,u} = \max(\sum_{0 \leq c &lt; C} dx_{ncu}, 0)</span>
+
+<span class="sd">    where :math:`n` is the instance index, :math:`c` the channel</span>
+<span class="sd">    index and :math:`u` the spatial multi-index (usually of dimension 2 for</span>
+<span class="sd">    images).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`torch.Tensor`): activation with gradient.</span>
+
+<span class="sd">    Return:</span>
+<span class="sd">        :class:`torch.Tensor`: saliency map.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="excitation_backprop"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.excitation_backprop.excitation_backprop">[docs]</a><span class="k">def</span> <span class="nf">excitation_backprop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                        <span class="n">context_builder</span><span class="o">=</span><span class="n">ExcitationBackpropContext</span><span class="p">,</span>
+                        <span class="n">gradient_to_saliency</span><span class="o">=</span><span class="n">gradient_to_excitation_backprop_saliency</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Excitation backprop.</span>
+
+<span class="sd">    The function takes the same arguments as :func:`.common.saliency`, with</span>
+<span class="sd">    the defaults required to apply the Excitation backprop method, and supports</span>
+<span class="sd">    the same arguments and return values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">context_builder</span> <span class="ow">is</span> <span class="n">ExcitationBackpropContext</span>
+    <span class="k">return</span> <span class="n">saliency</span><span class="p">(</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">context_builder</span><span class="o">=</span><span class="n">context_builder</span><span class="p">,</span>
+        <span class="n">gradient_to_saliency</span><span class="o">=</span><span class="n">gradient_to_saliency</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="contrastive_excitation_backprop"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.excitation_backprop.contrastive_excitation_backprop">[docs]</a><span class="k">def</span> <span class="nf">contrastive_excitation_backprop</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+                                    <span class="nb">input</span><span class="p">,</span>
+                                    <span class="n">target</span><span class="p">,</span>
+                                    <span class="n">saliency_layer</span><span class="p">,</span>
+                                    <span class="n">contrast_layer</span><span class="p">,</span>
+                                    <span class="n">classifier_layer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                    <span class="n">resize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">resize_mode</span><span class="o">=</span><span class="s1">&#39;bilinear&#39;</span><span class="p">,</span>
+                                    <span class="n">get_backward_gradient</span><span class="o">=</span><span class="n">get_backward_gradient</span><span class="p">,</span>
+                                    <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Contrastive excitation backprop.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): a model.</span>
+<span class="sd">        input (:class:`torch.Tensor`): input tensor.</span>
+<span class="sd">        target (int or :class:`torch.Tensor`): target label(s).</span>
+<span class="sd">        saliency_layer (str or :class:`torch.nn.Module`): name of the saliency</span>
+<span class="sd">            layer (str) or the layer itself (:class:`torch.nn.Module`) in</span>
+<span class="sd">            the model at which to visualize.</span>
+<span class="sd">        contrast_layer (str or :class:`torch.nn.Module`): name of the contrast</span>
+<span class="sd">            layer (str) or the layer itself (:class:`torch.nn.Module`).</span>
+<span class="sd">        classifier_layer (str or :class:`torch.nn.Module`, optional): name of</span>
+<span class="sd">            the last classifier layer (str) or the layer itself</span>
+<span class="sd">            (:class:`torch.nn.Module`). Defaults to ``None``, in which case</span>
+<span class="sd">            the functions tries to automatically identify the last layer.</span>
+<span class="sd">            Default: ``None``.</span>
+<span class="sd">        resize (bool or tuple, optional): If True resizes the saliency map to</span>
+<span class="sd">            the same size as :attr:`input`. It is also possible to pass a</span>
+<span class="sd">            (width, height) tuple to specify an arbitrary size. Default:</span>
+<span class="sd">            ``False``.</span>
+<span class="sd">        resize_mode (str, optional): Specify the resampling mode.</span>
+<span class="sd">            Default: ``&#39;bilinear&#39;``.</span>
+<span class="sd">        get_backward_gradient (function, optional): function that generates</span>
+<span class="sd">            gradient tensor to backpropagate. Default:</span>
+<span class="sd">            :func:`.common.get_backward_gradient`.</span>
+<span class="sd">        debug (bool, optional): If True, also return</span>
+<span class="sd">            :class:`collections.OrderedDict` of :class:`.common.Probe` objects</span>
+<span class="sd">            attached to all named modules in the model. Default: ``False``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor` or tuple: If :attr:`debug` is False, returns a</span>
+<span class="sd">        :class:`torch.Tensor` saliency map at :attr:`saliency_layer`.</span>
+<span class="sd">        Otherwise, returns a tuple of a :class:`torch.Tensor` saliency map</span>
+<span class="sd">        at :attr:`saliency_layer` and an :class:`collections.OrderedDict`</span>
+<span class="sd">        of :class:`Probe` objects for all modules in the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">debug_probes</span> <span class="o">=</span> <span class="n">attach_debug_probes</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="c1"># Disable gradients for model parameters.</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+        <span class="n">param</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Set model to eval mode.</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+    <span class="n">saliency_layer</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">saliency_layer</span><span class="p">)</span>
+    <span class="n">contrast_layer</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">contrast_layer</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">classifier_layer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">classifier_layer</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_classifier_layer</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">classifier_layer</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">classifier_layer</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">ExcitationBackpropContext</span><span class="p">():</span>
+        <span class="n">probe_contrast</span> <span class="o">=</span> <span class="n">Probe</span><span class="p">(</span><span class="n">contrast_layer</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="n">get_backward_gradient</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Flip the weights of the last layer.</span>
+            <span class="n">classifier_layer</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">neg_</span><span class="p">()</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">gradient</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span>
+
+            <span class="c1"># Save negative gradient and prepare to backpropagated contrastive</span>
+            <span class="c1"># gradient.</span>
+            <span class="n">probe_contrast</span><span class="o">.</span><span class="n">contrast</span> <span class="o">=</span> <span class="p">[</span><span class="n">probe_contrast</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grad</span><span class="p">]</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Flip back.</span>
+            <span class="n">classifier_layer</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">neg_</span><span class="p">()</span>
+
+        <span class="c1"># Forward-backward pass to get positive gradient at the contrastive</span>
+        <span class="c1"># layer and and backpropagate contrastive gradient to input.</span>
+        <span class="n">probe_saliency</span> <span class="o">=</span> <span class="n">Probe</span><span class="p">(</span><span class="n">saliency_layer</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;output&#39;</span><span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">gradient_to_contrastive_excitation_backprop_saliency</span><span class="p">(</span>
+        <span class="n">probe_saliency</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">probe_saliency</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+    <span class="n">probe_contrast</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">resize_saliency</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="n">saliency_map</span><span class="p">,</span> <span class="n">resize</span><span class="p">,</span> <span class="n">resize_mode</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">saliency_map</span><span class="p">,</span> <span class="n">debug_probes</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">saliency_map</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

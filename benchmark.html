@@ -1,0 +1,1256 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Benchmarking &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Utilities" href="utils.html" />
+    <link rel="prev" title="Attribution" href="attribution.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="attribution.html">Attribution</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Benchmarking</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pointing-game">Pointing Game</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-torchray.benchmark.datasets">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-torchray.benchmark.models">Reference models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-torchray.benchmark.logging">Logging with MongoDB</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Benchmarking</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/benchmark.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="benchmarking">
+<span id="benchmark"></span><h1>Benchmarking<a class="headerlink" href="#benchmarking" title="Permalink to this headline">¶</a></h1>
+<p>This module contains code for benchmarking attribution methods, including
+reproducing several published results. In addition to implementations of
+benchmarking protocols (<a class="reference internal" href="#module-torchray.benchmark.pointing_game" title="torchray.benchmark.pointing_game"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pointing_game</span></code></a>), the module also provides
+implementations of <em>reference datasets</em> and <em>reference models</em> used in prior
+research work, properly converted to PyTorch. Overall, this implementations
+closely reproduces prior results, notably the ones in the <a class="reference internal" href="attribution.html#ebp" id="id1"><span>[EBP]</span></a> paper.</p>
+<p>A standard benchmarking suite is included in this library as
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">examples.standard_suite</span></code>. For slow methods, a computer cluster may be
+required for evaluation (we do not include explicit support for clusters, but
+it is easy to add on top of this example code).</p>
+<p>It is also recommended to turn on logging (see
+<a class="reference internal" href="#module-torchray.benchmark.logging" title="torchray.benchmark.logging"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchray.benchmark.logging</span></code></a>), which allows the driver to
+uses MongoDB to store partial benchmarking results as it goes.
+Computations can then be cached and reused to resume the calculations
+after a crash or other issue. In order to start the logging server, use</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ python -m torchray.benchmark.server
+</pre></div>
+</div>
+<p>The server parameters (address, port, etc) can be configured by writing
+a <code class="docutils literal notranslate"><span class="pre">.torchrayrc</span></code> file in your current or home directory. The package
+contains an example configuration file. The server creates a regular
+MongoDB database (by default in <code class="docutils literal notranslate"><span class="pre">./data/db</span></code>) which can be manually
+explored by means of the MongoDB shell.</p>
+<p>By default, the driver writes data in the <code class="docutils literal notranslate"><span class="pre">./data/</span></code> subfolder.
+You can change that via the configuration file, or, possibly more easily,
+add a symbolic link to where you want to store the data.</p>
+<p>The data include the <em>datasets</em> (PASCAL VOC, COCO, ImageNet; see
+<a class="reference internal" href="#module-torchray.benchmark.datasets" title="torchray.benchmark.datasets"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchray.benchmark.datasets</span></code></a>).  These must be downloaded manually and
+stored in <code class="docutils literal notranslate"><span class="pre">./data/datasets/{voc,coco,imagenet}</span></code> unless this is changed via
+the configuration file. Note that these datasets can be very large (many GBs).</p>
+<p>The data also include <em>reference models</em> (see
+<a class="reference internal" href="#module-torchray.benchmark.models" title="torchray.benchmark.models"><code class="xref py py-mod docutils literal notranslate"><span class="pre">torchray.benchmark.models</span></code></a>).</p>
+<span class="target" id="module-torchray.benchmark"></span><p>This script provides a few functions for getting and plotting example data.</p>
+<dl class="function">
+<dt id="torchray.benchmark.get_example_data">
+<code class="sig-prename descclassname">torchray.benchmark.</code><code class="sig-name descname">get_example_data</code><span class="sig-paren">(</span><em class="sig-param">arch='vgg16'</em>, <em class="sig-param">shape=224</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark.html#get_example_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.get_example_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get example data to demonstrate visualization techniques.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arch</strong> (<em>str</em><em>, </em><em>optional</em>) – name of torchvision.models architecture.
+Default: <code class="docutils literal notranslate"><span class="pre">'vgg16'</span></code>.</p></li>
+<li><p><strong>shape</strong> (<em>int</em><em> or </em><em>tuple of int</em><em>, </em><em>optional</em>) – shape to resize input image to.
+Default: <code class="docutils literal notranslate"><span class="pre">224</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>a tuple
+containing</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>a convolutional neural network model in evaluation mode.</p></li>
+<li><p>a sample input tensor image.</p></li>
+<li><p>the ImageNet category id of an object in the image.</p></li>
+<li><p>the ImageNet category id of another object in the image.</p></li>
+</ul>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>, int, int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.plot_example">
+<code class="sig-prename descclassname">torchray.benchmark.</code><code class="sig-name descname">plot_example</code><span class="sig-paren">(</span><em class="sig-param">input</em>, <em class="sig-param">saliency</em>, <em class="sig-param">method</em>, <em class="sig-param">category_id</em>, <em class="sig-param">show_plot=False</em>, <em class="sig-param">save_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark.html#plot_example"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.plot_example" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot an example.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – 4D tensor containing input images.</p></li>
+<li><p><strong>saliency</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – 4D tensor containing saliency maps.</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – name of saliency method.</p></li>
+<li><p><strong>category_id</strong> (<em>int</em>) – ID of ImageNet category.</p></li>
+<li><p><strong>show_plot</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, show plot. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to save figure to. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="section" id="pointing-game">
+<h2>Pointing Game<a class="headerlink" href="#pointing-game" title="Permalink to this headline">¶</a></h2>
+<p>The <em>Pointing Game</em> <a class="reference internal" href="attribution.html#ebp" id="id2"><span>[EBP]</span></a> assesses the quality of an attribution method by
+testing how well it can extract from a predictor a response correlated with the
+presence of known object categories in the image.</p>
+<p>Given an input image <span class="math notranslate nohighlight">\(x\)</span> containing an object of category <span class="math notranslate nohighlight">\(c\)</span>, the
+attribution method is applied to the predictor in order to find the part of the
+images responsible for predicting <span class="math notranslate nohighlight">\(c\)</span>. The attribution method usually
+returns a saliency heatmap. The latter must then be converted in a single point
+<span class="math notranslate nohighlight">\((u,v)\)</span> that is “most likely” to be contained by an object of that class.
+The specific way the point is obtained is method-dependent.</p>
+<p>The attribution method then scores a hit if the point is within a <em>tolerance</em>
+<span class="math notranslate nohighlight">\(\tau\)</span> (set to 15 pixels by default) to the image region <span class="math notranslate nohighlight">\(\Omega\)</span>
+containing that object:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\operatorname{hit}(u,v|\Omega)
+= [ \exists (u',v') \in \Omega : \|(u,v) - (u',v')\| \leq \tau].\]</div>
+</div></blockquote>
+<p>The point coordinates <span class="math notranslate nohighlight">\((u,v)\)</span> are also indices <span class="math notranslate nohighlight">\(x_{ncvu}\)</span> in the
+input image tensor <span class="math notranslate nohighlight">\(x\)</span>.</p>
+<p>RISE <a class="reference internal" href="attribution.html#id15" id="id3"><span>[RISE]</span></a> and Extremal Perturbation <a class="reference internal" href="attribution.html#ep" id="id4"><span>[EP]</span></a> results are averaged over 3 runs.</p>
+<table class="colwidths-auto docutils align-default" id="id8">
+<caption><span class="caption-text">Pointing game results</span><a class="headerlink" href="#id8" title="Permalink to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head stub"></th>
+<th class="head"><p>voc_2007</p></th>
+<th class="head"><p>voc_2007</p></th>
+<th class="head"><p>voc_2007</p></th>
+<th class="head"><p>voc_2007</p></th>
+<th class="head"><p>coco</p></th>
+<th class="head"><p>coco</p></th>
+<th class="head"><p>coco</p></th>
+<th class="head"><p>coco</p></th>
+</tr>
+<tr class="row-even"><th class="head stub"></th>
+<th class="head"><p>vgg16</p></th>
+<th class="head"><p>vgg16</p></th>
+<th class="head"><p>resnet50</p></th>
+<th class="head"><p>resnet50</p></th>
+<th class="head"><p>vgg16</p></th>
+<th class="head"><p>vgg16</p></th>
+<th class="head"><p>resnet50</p></th>
+<th class="head"><p>resnet50</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><th class="stub"><p>center</p></th>
+<td><p>69.6</p></td>
+<td><p>42.4</p></td>
+<td><p>69.6</p></td>
+<td><p>42.4</p></td>
+<td><p>27.8</p></td>
+<td><p>19.5</p></td>
+<td><p>27.8</p></td>
+<td><p>19.5</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>gradient</p></th>
+<td><p>76.3</p></td>
+<td><p>56.9</p></td>
+<td><p>72.3</p></td>
+<td><p>56.8</p></td>
+<td><p>37.7</p></td>
+<td><p>31.4</p></td>
+<td><p>35.0</p></td>
+<td><p>29.4</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>deconvnet</p></th>
+<td><p>67.5</p></td>
+<td><p>44.2</p></td>
+<td><p>68.6</p></td>
+<td><p>44.7</p></td>
+<td><p>30.7</p></td>
+<td><p>23.0</p></td>
+<td><p>30.0</p></td>
+<td><p>21.9</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>guided_backprop</p></th>
+<td><p>75.9</p></td>
+<td><p>53.0</p></td>
+<td><p>77.2</p></td>
+<td><p>59.4</p></td>
+<td><p>39.1</p></td>
+<td><p>31.4</p></td>
+<td><p>42.1</p></td>
+<td><p>35.3</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>excitation_backprop</p></th>
+<td><p>77.1</p></td>
+<td><p>56.6</p></td>
+<td><p>84.5</p></td>
+<td><p>70.8</p></td>
+<td><p>39.8</p></td>
+<td><p>32.8</p></td>
+<td><p>49.6</p></td>
+<td><p>43.9</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>contrastive_excitation_backprop</p></th>
+<td><p>79.9</p></td>
+<td><p>66.5</p></td>
+<td><p>90.7</p></td>
+<td><p>82.1</p></td>
+<td><p>49.7</p></td>
+<td><p>44.3</p></td>
+<td><p>58.5</p></td>
+<td><p>53.6</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>rise</p></th>
+<td><p>86.9</p></td>
+<td><p>75.1</p></td>
+<td><p>86.4</p></td>
+<td><p>78.8</p></td>
+<td><p>50.8</p></td>
+<td><p>45.3</p></td>
+<td><p>54.7</p></td>
+<td><p>50.0</p></td>
+</tr>
+<tr class="row-even"><th class="stub"><p>grad_cam</p></th>
+<td><p>86.6</p></td>
+<td><p>74.0</p></td>
+<td><p>90.4</p></td>
+<td><p>82.3</p></td>
+<td><p>54.2</p></td>
+<td><p>49.0</p></td>
+<td><p>57.3</p></td>
+<td><p>52.3</p></td>
+</tr>
+<tr class="row-odd"><th class="stub"><p>extremal_perturbation</p></th>
+<td><p>88.0</p></td>
+<td><p>76.1</p></td>
+<td><p>88.9</p></td>
+<td><p>78.7</p></td>
+<td><p>51.5</p></td>
+<td><p>45.9</p></td>
+<td><p>56.5</p></td>
+<td><p>51.5</p></td>
+</tr>
+</tbody>
+</table>
+<span class="target" id="module-torchray.benchmark.pointing_game"></span><p>The <code class="xref py py-mod docutils literal notranslate"><span class="pre">pointing_game</span></code> modules implements the pointing game benchmark.
+The basic benchmark is implemented by the <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame" title="torchray.benchmark.pointing_game.PointingGame"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointingGame</span></code></a> class. However,
+for benchmarking purposes it is recommended to use the wrapper class
+<a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGameBenchmark" title="torchray.benchmark.pointing_game.PointingGameBenchmark"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointingGameBenchmark</span></code></a> instead. This class supports <em>PASCAL VOC 2007
+test</em> and <em>COCO 2014 val</em> with the modifications used in <a class="reference internal" href="attribution.html#ebp" id="id5"><span>[EBP]</span></a>, including the
+ability to run on their “difficult” subsets as defined in the original paper.</p>
+<p>The class can be used as follows:</p>
+<ol class="arabic simple">
+<li><p>Obtain a dataset (usually COCO or PASCAL VOC) and choose a subset.</p></li>
+<li><p>Initialize an instance of <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGameBenchmark" title="torchray.benchmark.pointing_game.PointingGameBenchmark"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointingGameBenchmark</span></code></a>.</p></li>
+<li><p>For each image in the dataset:</p>
+<ol class="arabic simple">
+<li><p>For each class in the image:</p>
+<ol class="arabic simple">
+<li><p>Run the attribution method, usually resulting in a saliency map for
+class <span class="math notranslate nohighlight">\(c\)</span>.</p></li>
+<li><p>Convert the result to a point, usually by finding the maximizer of the
+saliency map.</p></li>
+<li><p>Use the <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGameBenchmark.evaluate" title="torchray.benchmark.pointing_game.PointingGameBenchmark.evaluate"><code class="xref py py-func docutils literal notranslate"><span class="pre">PointingGameBenchmark.evaluate()</span></code></a> function to run the
+test and accumulate the statistics.</p></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>Extract the <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame.hits" title="torchray.benchmark.pointing_game.PointingGame.hits"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PointingGame.hits</span></code></a> and <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame.misses" title="torchray.benchmark.pointing_game.PointingGame.misses"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PointingGame.misses</span></code></a> or
+<code class="docutils literal notranslate"><span class="pre">print</span></code> the instance to display the results.</p></li>
+</ol>
+<dl class="class">
+<dt id="torchray.benchmark.pointing_game.PointingGame">
+<em class="property">class </em><code class="sig-prename descclassname">torchray.benchmark.pointing_game.</code><code class="sig-name descname">PointingGame</code><span class="sig-paren">(</span><em class="sig-param">num_classes</em>, <em class="sig-param">tolerance=15</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Pointing game.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_classes</strong> (<em>int</em>) – number of classes in the dataset.</p></li>
+<li><p><strong>tolerance</strong> (<em>int</em><em>, </em><em>optional</em>) – tolerance (in pixels) of margin around
+ground truth annotation. Default: 15.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="torchray.benchmark.pointing_game.PointingGame.hits">
+<code class="sig-name descname">hits</code><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.hits" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_classes</span></code>-dimensional vector of
+hits counts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="torchray.benchmark.pointing_game.PointingGame.misses">
+<code class="sig-name descname">misses</code><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.misses" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_classes</span></code>-dimensional vector
+of misses counts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGame.accuracy">
+<em class="property">property </em><code class="sig-name descname">accuracy</code><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>mean accuracy, computed by averaging
+<a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame.class_accuracies" title="torchray.benchmark.pointing_game.PointingGame.class_accuracies"><code class="xref py py-attr docutils literal notranslate"><span class="pre">class_accuracies</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGame.aggregate">
+<code class="sig-name descname">aggregate</code><span class="sig-paren">(</span><em class="sig-param">hit</em>, <em class="sig-param">class_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGame.aggregate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.aggregate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add pointing result from one example.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGame.class_accuracies">
+<em class="property">property </em><code class="sig-name descname">class_accuracies</code><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.class_accuracies" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_classes</span></code>-dimensional vector
+containing per-class accuracy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGame.evaluate">
+<code class="sig-name descname">evaluate</code><span class="sig-paren">(</span><em class="sig-param">mask</em>, <em class="sig-param">point</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGame.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate a point prediction.</p>
+<p>The function tests whether the prediction <code class="xref py py-attr docutils literal notranslate"><span class="pre">point</span></code> is within a
+certain tolerance of the object ground-truth region <code class="xref py py-attr docutils literal notranslate"><span class="pre">mask</span></code>
+expressed as a boolean occupancy map.</p>
+<p>Use the <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame.reset" title="torchray.benchmark.pointing_game.PointingGame.reset"><code class="xref py py-func docutils literal notranslate"><span class="pre">reset()</span></code></a> method to clear all counters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – <span class="math notranslate nohighlight">\(\{0,1\}^{H\times W}\)</span>.</p></li>
+<li><p><strong>point</strong> (<em>tuple of ints</em>) – predicted point <span class="math notranslate nohighlight">\((u,v)\)</span>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>+1 if the point hits the object; otherwise -1.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGame.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGame.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGame.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset hits and misses.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="torchray.benchmark.pointing_game.PointingGameBenchmark">
+<em class="property">class </em><code class="sig-prename descclassname">torchray.benchmark.pointing_game.</code><code class="sig-name descname">PointingGameBenchmark</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">tolerance=15</em>, <em class="sig-param">difficult=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGameBenchmark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGameBenchmark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#torchray.benchmark.pointing_game.PointingGame" title="torchray.benchmark.pointing_game.PointingGame"><code class="xref py py-class docutils literal notranslate"><span class="pre">torchray.benchmark.pointing_game.PointingGame</span></code></a></p>
+<p>Pointing game benchmark on standard datasets.</p>
+<p>The pointing game should be initialized with a dataset, set to either:</p>
+<ul class="simple">
+<li><p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.VOCDetection</span></code>) VOC 2007 <em>test</em> subset.</p></li>
+<li><p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.CocoDetection</span></code>) COCO <em>val2014</em> subset.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.VisionDataset</span></code>) – The dataset.</p></li>
+<li><p><strong>tolerance</strong> (<em>int</em>) – the tolerance for the pointing game. Default: <code class="docutils literal notranslate"><span class="pre">15</span></code>.</p></li>
+<li><p><strong>difficult</strong> (<em>bool</em>) – whether to use the difficult subset.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="torchray.benchmark.pointing_game.PointingGameBenchmark.evaluate">
+<code class="sig-name descname">evaluate</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">class_id</em>, <em class="sig-param">point</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/pointing_game.html#PointingGameBenchmark.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.pointing_game.PointingGameBenchmark.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate an label-class-point triplet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<em>dict</em>) – a label in VOC or Coco detection format.</p></li>
+<li><p><strong>class_id</strong> (<em>int</em>) – a class id.</p></li>
+<li><p><strong>point</strong> (<em>iterable</em>) – a point specified as a pair of u, v coordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>+1 if the point hits the object, -1 if the point misses the</dt><dd><p>object, and 0 if the point is skipped during evaluation.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-torchray.benchmark.datasets">
+<span id="datasets"></span><h2>Datasets<a class="headerlink" href="#module-torchray.benchmark.datasets" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a number of benchmark datasets:</p>
+<ul class="simple">
+<li><p>ImageNet ILSVCR 12 and other <em>image folders</em> datasets (<a class="reference internal" href="#torchray.benchmark.datasets.ImageFolder" title="torchray.benchmark.datasets.ImageFolder"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageFolder</span></code></a>).</p></li>
+<li><p>PASCAL VOC (<a class="reference internal" href="#torchray.benchmark.datasets.VOCDetection" title="torchray.benchmark.datasets.VOCDetection"><code class="xref py py-class docutils literal notranslate"><span class="pre">VOCDetection</span></code></a>).</p></li>
+<li><p>MS COCO (<a class="reference internal" href="#torchray.benchmark.datasets.CocoDetection" title="torchray.benchmark.datasets.CocoDetection"><code class="xref py py-class docutils literal notranslate"><span class="pre">CocoDetection</span></code></a>).</p></li>
+</ul>
+<p>The classes in this module extend corresponding classes in
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">torchvision.datasets</span></code> with functions for converting labels in various
+formats and similar. Some of these functions are also provided as
+“stand alone”.</p>
+<dl class="data">
+<dt id="torchray.benchmark.datasets.IMAGENET_CLASSES">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">IMAGENET_CLASSES</code><a class="headerlink" href="#torchray.benchmark.datasets.IMAGENET_CLASSES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of the 1000 ImageNet ILSVRC class names.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="torchray.benchmark.datasets.VOC_CLASSES">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">VOC_CLASSES</code><a class="headerlink" href="#torchray.benchmark.datasets.VOC_CLASSES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of the 20 PASCAL VOC class names.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="torchray.benchmark.datasets.COCO_CLASSES">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">COCO_CLASSES</code><a class="headerlink" href="#torchray.benchmark.datasets.COCO_CLASSES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of the 80 COCO class names.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.coco_as_class_ids">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">coco_as_class_ids</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#coco_as_class_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.coco_as_class_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a COCO detection label to the list of class IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>list of dict</em>) – an image label in the VOC detection format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of ids of classes in the image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.coco_as_image_size">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">coco_as_image_size</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#coco_as_image_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.coco_as_image_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a COCO detection label to the image size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>list of dict</em>) – an image label in the VOC detection format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>width, height of image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.coco_as_mask">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">coco_as_mask</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">label</em>, <em class="sig-param">class_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#coco_as_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.coco_as_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a COCO detection label to a mask.</p>
+<p>Return a boolean mask for the regions of <code class="xref py py-attr docutils literal notranslate"><span class="pre">class_id</span></code>.</p>
+<p>If the label is the empty list, because there are no objects at all in the
+image, the function returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<em>array of dict</em>) – an image label in the VOC detection format.</p></li>
+<li><p><strong>class_id</strong> (<em>int</em>) – ID of the requested class.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>2D boolean tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.voc_as_class_ids">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">voc_as_class_ids</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#voc_as_class_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.voc_as_class_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a VOC detection label to the list of class IDs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>dict</em>) – an image label in the VOC detection format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of ids of classes in the image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.voc_as_image_size">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">voc_as_image_size</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#voc_as_image_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.voc_as_image_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a VOC detection label to the image size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>dict</em>) – an image label in the VOC detection format.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>width, height of image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.voc_as_mask">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">voc_as_mask</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">class_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#voc_as_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.voc_as_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a VOC detection label to a mask.</p>
+<p>Return a boolean mask selecting the region contained in the bounding boxes
+of <code class="xref py py-attr docutils literal notranslate"><span class="pre">class_id</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>label</strong> (<em>dict</em>) – an image label in the VOC detection format.</p></li>
+<li><p><strong>class_id</strong> (<em>int</em>) – ID of the requested class.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>2D boolean tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="torchray.benchmark.datasets.ImageFolder">
+<em class="property">class </em><code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">ImageFolder</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">limiter=None</em>, <em class="sig-param">full_classes=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#ImageFolder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.ImageFolder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.datasets.folder.ImageFolder</span></code></p>
+<p>Image folder dataset.</p>
+<p>This class extends <code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.datasets.ImageFolder</span></code>.
+Its constructor supports the following additional arguments:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>limiter</strong> (<em>int</em><em>, </em><em>optional</em>) – limit the dataset to <code class="xref py py-attr docutils literal notranslate"><span class="pre">limiter</span></code> images,
+picking from each class in a round-robin fashion.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>full_classes</strong> (<em>list of str</em><em>, </em><em>optional</em>) – list of full class names.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.ImageFolder.selection">
+<code class="sig-name descname">selection</code><a class="headerlink" href="#torchray.benchmark.datasets.ImageFolder.selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>indices of the active images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.ImageFolder.full_classes">
+<code class="sig-name descname">full_classes</code><a class="headerlink" href="#torchray.benchmark.datasets.ImageFolder.full_classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>class names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.ImageFolder.get_image_url">
+<code class="sig-name descname">get_image_url</code><span class="sig-paren">(</span><em class="sig-param">i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#ImageFolder.get_image_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.ImageFolder.get_image_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the URL of an image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>i</strong> (<em>int</em>) – image index.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>image URL.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="torchray.benchmark.datasets.VOCDetection">
+<em class="property">class </em><code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">VOCDetection</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">limiter=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.datasets.voc.VOCDetection</span></code></p>
+<p>PASCAL VOC Detection dataset.</p>
+<p>This class extends <code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.datasets.VOCDetection</span></code>.
+Its constructor supports the following additional arguments:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>limiter</strong> (<em>int</em><em>, </em><em>optional</em>) – limit the dataset to the first <code class="xref py py-attr docutils literal notranslate"><span class="pre">limiter</span></code>
+images. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.VOCDetection.selection">
+<code class="sig-name descname">selection</code><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>indices of the active images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.VOCDetection.classes">
+<code class="sig-name descname">classes</code><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>class names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.as_class_ids">
+<code class="sig-name descname">as_class_ids</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.as_class_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.as_class_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to list of class IDs.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.voc_as_class_ids" title="torchray.benchmark.datasets.voc_as_class_ids"><code class="xref py py-func docutils literal notranslate"><span class="pre">voc_as_class_ids()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.as_image_name">
+<code class="sig-name descname">as_image_name</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.as_image_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.as_image_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to the image name.</p>
+<p>The same as <code class="xref py py-func docutils literal notranslate"><span class="pre">voc_as_image_name()</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.as_image_size">
+<code class="sig-name descname">as_image_size</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.as_image_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.as_image_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to the image size.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.voc_as_image_size" title="torchray.benchmark.datasets.voc_as_image_size"><code class="xref py py-func docutils literal notranslate"><span class="pre">voc_as_image_size()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.as_mask">
+<code class="sig-name descname">as_mask</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">class_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.as_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.as_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to a mask.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.voc_as_mask" title="torchray.benchmark.datasets.voc_as_mask"><code class="xref py py-func docutils literal notranslate"><span class="pre">voc_as_mask()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.collate">
+<em class="property">static </em><code class="sig-name descname">collate</code><span class="sig-paren">(</span><em class="sig-param">batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.collate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.collate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collate function for use in a data loader.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.VOCDetection.get_image_url">
+<code class="sig-name descname">get_image_url</code><span class="sig-paren">(</span><em class="sig-param">i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#VOCDetection.get_image_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.VOCDetection.get_image_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the URL of an image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>i</strong> (<em>int</em>) – Image index.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Image URL.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="torchray.benchmark.datasets.CocoDetection">
+<em class="property">class </em><code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">CocoDetection</code><span class="sig-paren">(</span><em class="sig-param">root</em>, <em class="sig-param">annFile</em>, <em class="sig-param">*args</em>, <em class="sig-param">limiter=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.datasets.coco.CocoDetection</span></code></p>
+<p>COCO Detection dataset.</p>
+<p>The data can be downloaded at <a class="reference external" href="http://cocodataset.org/#download">http://cocodataset.org/#download</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>limiter</strong> (<em>int</em><em>, </em><em>optional</em>) – limit the dataset to the first <code class="xref py py-attr docutils literal notranslate"><span class="pre">limiter</span></code>
+images. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.CocoDetection.classes">
+<code class="sig-name descname">classes</code><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.classes" title="Permalink to this definition">¶</a></dt>
+<dd><p>class names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="torchray.benchmark.datasets.CocoDetection.selection">
+<code class="sig-name descname">selection</code><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>indices of the active images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.as_class_ids">
+<code class="sig-name descname">as_class_ids</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.as_class_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.as_class_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to list of class IDs.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.coco_as_class_ids" title="torchray.benchmark.datasets.coco_as_class_ids"><code class="xref py py-func docutils literal notranslate"><span class="pre">coco_as_class_ids()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.as_image_name">
+<code class="sig-name descname">as_image_name</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.as_image_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.as_image_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to the image name.</p>
+<p>The same as <code class="xref py py-func docutils literal notranslate"><span class="pre">coco_as_image_name.()</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.as_image_size">
+<code class="sig-name descname">as_image_size</code><span class="sig-paren">(</span><em class="sig-param">label</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.as_image_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.as_image_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to the image size.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.coco_as_image_size" title="torchray.benchmark.datasets.coco_as_image_size"><code class="xref py py-func docutils literal notranslate"><span class="pre">coco_as_image_size()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.as_mask">
+<code class="sig-name descname">as_mask</code><span class="sig-paren">(</span><em class="sig-param">label</em>, <em class="sig-param">class_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.as_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.as_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a label to a mask.</p>
+<p>The same as <a class="reference internal" href="#torchray.benchmark.datasets.coco_as_mask" title="torchray.benchmark.datasets.coco_as_mask"><code class="xref py py-func docutils literal notranslate"><span class="pre">coco_as_mask()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.collate">
+<em class="property">static </em><code class="sig-name descname">collate</code><span class="sig-paren">(</span><em class="sig-param">batch</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.collate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.collate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collate function for use in a data loader.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.get_image_url">
+<code class="sig-name descname">get_image_url</code><span class="sig-paren">(</span><em class="sig-param">i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#CocoDetection.get_image_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.get_image_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return image url.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>i</strong> (<em>int</em>) – image index.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>path to image.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="torchray.benchmark.datasets.CocoDetection.images">
+<em class="property">property </em><code class="sig-name descname">images</code><a class="headerlink" href="#torchray.benchmark.datasets.CocoDetection.images" title="Permalink to this definition">¶</a></dt>
+<dd><p>paths to images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list of str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.datasets.get_dataset">
+<code class="sig-prename descclassname">torchray.benchmark.datasets.</code><code class="sig-name descname">get_dataset</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">subset</em>, <em class="sig-param">dataset_dir=None</em>, <em class="sig-param">annotation_dir=None</em>, <em class="sig-param">transform=None</em>, <em class="sig-param">limiter=None</em>, <em class="sig-param">download=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/datasets.html#get_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.datasets.get_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.data.Dataset</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – name of the dataset; choose from <code class="docutils literal notranslate"><span class="pre">&quot;imagenet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;voc&quot;</span></code>
+or <code class="docutils literal notranslate"><span class="pre">&quot;coco&quot;</span></code>.</p></li>
+<li><p><strong>subset</strong> (<em>str</em>) – name of the dataset subset or split.</p></li>
+<li><p><strong>dataset_dir</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to root directory containing data.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>annotation_dir</strong> (<em>str</em><em>, </em><em>optional</em>) – Path to root directory containing annotations. Required for COCO
+only. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>transform</strong> (<em>function</em><em>, </em><em>optional</em>) – input transformation function.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>limiter</strong> (<em>int</em><em>, </em><em>optional</em>) – limit the dataset to <code class="xref py py-attr docutils literal notranslate"><span class="pre">limiter</span></code>
+images. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>download</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True and <code class="xref py py-attr docutils literal notranslate"><span class="pre">name</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;voc&quot;</span></code>,
+download the dataset to <code class="xref py py-attr docutils literal notranslate"><span class="pre">dataset_dir</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the requested dataset.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.data.Dataset</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-torchray.benchmark.models">
+<span id="reference-models"></span><h2>Reference models<a class="headerlink" href="#module-torchray.benchmark.models" title="Permalink to this headline">¶</a></h2>
+<p>This module allows obtaining standard models for benchmarking attribution
+methods. The models can be obtained via the function <a class="reference internal" href="#torchray.benchmark.models.get_model" title="torchray.benchmark.models.get_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_model()</span></code></a>.</p>
+<p>The function can edit models slightly to make them compatible with benchmarks.
+Optional modifications include</p>
+<ol class="arabic simple">
+<li><p>Converting a model to fully-convolutional (by replacing linear layers
+with equivalent convolutional layers.)</p></li>
+<li><p>Adding a Global Average Pooling (GAP) layer at the end, so that
+a fully-convolutional model can still work as an image classifier.</p></li>
+</ol>
+<p>For the <em>pointing game</em>, we support the VGG16 and ResNet50 models
+fine-tuned on the PASCAL VOC 2017 and COCO 2014 classification tasks
+from the paper <a class="reference internal" href="attribution.html#ebp" id="id6"><span>[EBP]</span></a> that introduced this test. These models are converted
+from the original Caffe implementation and reproduce the results in <a class="reference internal" href="attribution.html#ebp" id="id7"><span>[EBP]</span></a>.</p>
+<dl class="function">
+<dt id="torchray.benchmark.models.get_model">
+<code class="sig-prename descclassname">torchray.benchmark.models.</code><code class="sig-name descname">get_model</code><span class="sig-paren">(</span><em class="sig-param">arch='vgg16'</em>, <em class="sig-param">dataset='voc'</em>, <em class="sig-param">convert_to_fully_convolutional=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/models.html#get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.models.get_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a reference model for the specified architecture and dataset.</p>
+<p>The model is returned in evaluation mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arch</strong> (<em>str</em><em>, </em><em>optional</em>) – name of architecture. If <code class="xref py py-attr docutils literal notranslate"><span class="pre">dataset</span></code>
+contains <code class="docutils literal notranslate"><span class="pre">&quot;imagenet&quot;</span></code>, all <code class="xref py py-mod docutils literal notranslate"><span class="pre">torchvision.models</span></code>
+architectures are supported; otherwise, only “vgg16” and
+“resnet50” are currently supported). Default: <code class="docutils literal notranslate"><span class="pre">'vgg16'</span></code>.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em><em>, </em><em>optional</em>) – name of dataset, should contain
+<code class="docutils literal notranslate"><span class="pre">'imagenet'</span></code>, <code class="docutils literal notranslate"><span class="pre">'voc'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'coco'</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">'voc'</span></code>.</p></li>
+<li><p><strong>convert_to_fully_convolutional</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, convert the
+model to be fully convolutional. Default: False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.models.get_transform">
+<code class="sig-prename descclassname">torchray.benchmark.models.</code><code class="sig-name descname">get_transform</code><span class="sig-paren">(</span><em class="sig-param">dataset='imagenet'</em>, <em class="sig-param">size=224</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/models.html#get_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.models.get_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a composition of standard pre-processing transformations for
+feeding models. For non-ImageNet datasets, the transforms are
+for models converted from Caffe (i.e., Caffe pre-processing).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>str</em>) – name of dataset, should contain either <code class="docutils literal notranslate"><span class="pre">'imagenet'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'coco'</span></code> or <code class="docutils literal notranslate"><span class="pre">'voc'</span></code> (default: <code class="docutils literal notranslate"><span class="pre">'imagenet'</span></code>).</p></li>
+<li><p><strong>size</strong> (<em>sequence</em><em> or </em><em>int</em>) – desired output size (see
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.transforms.Resize</span></code> for more details).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>transform.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torchvision.Transform</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.models.replace_module">
+<code class="sig-prename descclassname">torchray.benchmark.models.</code><code class="sig-name descname">replace_module</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">module_name</em>, <em class="sig-param">new_module</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/models.html#replace_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.models.replace_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace a <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code> with another one in a model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>) – model in which to find and replace
+the module with the name <code class="xref py py-attr docutils literal notranslate"><span class="pre">module_name</span></code> with
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">new_module</span></code>.</p></li>
+<li><p><strong>module_name</strong> (<em>str</em>) – path of module to replace in the model as a string,
+with <code class="docutils literal notranslate"><span class="pre">'.'</span></code> denoting membership in another module. For example,
+<code class="docutils literal notranslate"><span class="pre">'features.11'</span></code> in AlexNet (given by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">torchvision.models.alexnet.alexnet()</span></code>) refers to the 11th
+module in the <code class="docutils literal notranslate"><span class="pre">'features'</span></code> module, that is, the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.ReLU</span></code> module after the last conv layer in
+AlexNet.</p></li>
+<li><p><strong>new_module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>) – replacement module.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-torchray.benchmark.logging">
+<span id="logging-with-mongodb"></span><h2>Logging with MongoDB<a class="headerlink" href="#module-torchray.benchmark.logging" title="Permalink to this headline">¶</a></h2>
+<p>This module provides function that to be log information (e.g., benchmark
+results) to a MongoDB database.</p>
+<p>See <code class="xref py py-mod docutils literal notranslate"><span class="pre">examples.standard_suite</span></code> for an example of how to use MongoDB for
+logging benchmark results.</p>
+<p>To start a MongoDB server, use</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ python -m torchray.benchmark.server
+</pre></div>
+</div>
+<dl class="function">
+<dt id="torchray.benchmark.logging.mongo_connect">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">mongo_connect</code><span class="sig-paren">(</span><em class="sig-param">database</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#mongo_connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.mongo_connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to MongoDB server and and return a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pymongo.database.Database</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>database</strong> (<em>str</em>) – name of database.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>database.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">pymongo.database.Database</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.logging.mongo_save">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">mongo_save</code><span class="sig-paren">(</span><em class="sig-param">database</em>, <em class="sig-param">collection_key</em>, <em class="sig-param">id_key</em>, <em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#mongo_save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.mongo_save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save results to MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pymongo.database.Database</span></code>) – MongoDB database to save
+results to.</p></li>
+<li><p><strong>collection_key</strong> (<em>str</em>) – name of collection.</p></li>
+<li><p><strong>id_key</strong> (<em>str</em>) – id key with which to store <code class="xref py py-attr docutils literal notranslate"><span class="pre">data</span></code>.</p></li>
+<li><p><strong>data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bson.binary.Binary</span></code> or dict) – data to store in
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">db</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.logging.mongo_load">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">mongo_load</code><span class="sig-paren">(</span><em class="sig-param">database</em>, <em class="sig-param">collection_key</em>, <em class="sig-param">id_key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#mongo_load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.mongo_load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data from MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pymongo.database.Database</span></code>) – MongoDB database to save
+results to.</p></li>
+<li><p><strong>collection_key</strong> (<em>str</em>) – name of collection.</p></li>
+<li><p><strong>id_key</strong> (<em>str</em>) – id key to look up data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>retrieved data (returns None if no data with <code class="xref py py-attr docutils literal notranslate"><span class="pre">id_key</span></code> is found).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.logging.data_to_mongo">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">data_to_mongo</code><span class="sig-paren">(</span><em class="sig-param">data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#data_to_mongo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.data_to_mongo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare data to be stored in a MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (dict, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>, or <code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – data to
+prepare for storage in a MongoDB dataset (if dict, items are
+recursively prepared for storage). If the underlying data is
+not <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">np.ndarray</span></code>, then <code class="xref py py-attr docutils literal notranslate"><span class="pre">data</span></code>
+is returned as is.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>correctly formatted data to store in a MongoDB database.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bson.binary.Binary</span></code> or dict of <code class="xref py py-class docutils literal notranslate"><span class="pre">bson.binary.Binary</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.logging.data_from_mongo">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">data_from_mongo</code><span class="sig-paren">(</span><em class="sig-param">mongo_data</em>, <em class="sig-param">map_location=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#data_from_mongo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.data_from_mongo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decode data stored in a MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mongo_data</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bson.binary.Binary</span></code> or dict) – data to decode (if dict, items are recursively decoded). If
+the underlying data type is not <cite>:class:torch.Tensor</cite> or
+something stored using <code class="xref py py-mod docutils literal notranslate"><span class="pre">pickle</span></code>, then <code class="xref py py-attr docutils literal notranslate"><span class="pre">mongo_data</span></code>
+is returned as is.</p></li>
+<li><p><strong>map_location</strong> (function, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code>, str or dict) – where to
+remap storage locations (see <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.load()</span></code> for more details).
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>decoded data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.benchmark.logging.last_lines">
+<code class="sig-prename descclassname">torchray.benchmark.logging.</code><code class="sig-name descname">last_lines</code><span class="sig-paren">(</span><em class="sig-param">string</em>, <em class="sig-param">num_lines</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/benchmark/logging.html#last_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.benchmark.logging.last_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the last few lines from a string.</p>
+<p>The function extracts the last attr:<cite>n</cite> lines from the string attr:<cite>str</cite>.
+If attr:<cite>n</cite> is a negative number, then it extracts the first lines
+instead. It also skips lines beginning with <code class="docutils literal notranslate"><span class="pre">'Figure('</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>string</strong> (<em>str</em>) – string.</p></li>
+<li><p><strong>num_lines</strong> (<em>int</em>) – number of lines to extract.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>substring.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utilities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="attribution.html" class="btn btn-neutral float-left" title="Attribution" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

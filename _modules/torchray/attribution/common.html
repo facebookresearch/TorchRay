@@ -1,0 +1,778 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.attribution.common &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>torchray.attribution.common</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.attribution.common</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module defines common code for the backpropagation methods.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">import</span> <span class="nn">weakref</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">packaging</span> <span class="k">import</span> <span class="n">version</span>
+
+<span class="kn">from</span> <span class="nn">torchray.utils</span> <span class="k">import</span> <span class="n">imsmooth</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;attach_debug_probes&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;get_backward_gradient&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;get_module&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;get_pointing_gradient&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;gradient_to_saliency&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Probe&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;Patch&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;NullContext&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ReLUContext&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;resize_saliency&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;saliency&#39;</span>
+<span class="p">]</span>
+
+<span class="c1"># Certain algorithms fail to work properly in earlier versions.</span>
+<span class="k">assert</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;1.1&#39;</span><span class="p">),</span> \
+    <span class="s1">&#39;PyTorch 1.1 or above required.&#39;</span>
+
+
+<div class="viewcode-block" id="Patch"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.Patch">[docs]</a><span class="k">class</span> <span class="nc">Patch</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Patch a callable in a module.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Patch.resolve"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.Patch.resolve">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="n">target</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resolve a target into a module and an attribute.</span>
+
+<span class="sd">        The function resolves a string such as ``&#39;this.that.thing&#39;`` into a</span>
+<span class="sd">        module instance `this.that` (importing the module) and an attribute</span>
+<span class="sd">        `thing`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target (str): target string.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: module, attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">import_path</span> <span class="o">=</span> <span class="n">components</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">import_path</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
+            <span class="n">import_path</span> <span class="o">+=</span> <span class="s1">&#39;.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+            <span class="nb">__import__</span><span class="p">(</span><span class="n">import_path</span><span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">comp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span></div>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">new_callable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Patch a callable in a module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target (str): path to the callable to patch.</span>
+<span class="sd">            callable (fun): new callable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">Patch</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orig_callable</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">new_callable</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Patch.remove"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.Patch.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove the patch.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">orig_callable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="ReLUContext"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.ReLUContext">[docs]</a><span class="k">class</span> <span class="nc">ReLUContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A context manager that replaces :func:`torch.relu` with</span>
+<span class="sd">        :attr:`relu_function`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        relu_func (:class:`torch.autograd.function.FunctionMeta`): class</span>
+<span class="sd">            definition of a :class:`torch.autograd.Function`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">relu_func</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">relu_func</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">FunctionMeta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relu_func</span> <span class="o">=</span> <span class="n">relu_func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patches</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">relu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu_func</span><span class="p">()</span><span class="o">.</span><span class="n">apply</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patches</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Patch</span><span class="p">(</span><span class="s1">&#39;torch.relu&#39;</span><span class="p">,</span> <span class="n">relu</span><span class="p">),</span>
+            <span class="n">Patch</span><span class="p">(</span><span class="s1">&#39;torch.relu_&#39;</span><span class="p">,</span> <span class="n">relu</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">patches</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># re-raise any exception</span></div>
+
+
+<span class="k">def</span> <span class="nf">_wrap_in_list</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">_InjectContrast</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contrast</span><span class="p">,</span> <span class="n">non_negative</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span> <span class="o">=</span> <span class="n">contrast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">non_negative</span> <span class="o">=</span> <span class="n">non_negative</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">grad</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">grad</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">non_negative</span><span class="p">:</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">delta</span>
+
+
+<span class="k">class</span> <span class="nc">_Catch</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probe</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">ref</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">probe</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probe</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">retain_grad</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">contrast</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">contrast</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">injector</span> <span class="o">=</span> <span class="n">_InjectContrast</span><span class="p">(</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">contrast</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">p</span><span class="o">.</span><span class="n">non_negative_contrast</span><span class="p">)</span>
+                <span class="n">x</span><span class="o">.</span><span class="n">register_hook</span><span class="p">(</span><span class="n">injector</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_CatchInputs</span><span class="p">(</span><span class="n">_Catch</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_data</span><span class="p">(</span><span class="n">_wrap_in_list</span><span class="p">(</span><span class="nb">input</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">_CatchOutputs</span><span class="p">(</span><span class="n">_Catch</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_data</span><span class="p">(</span><span class="n">_wrap_in_list</span><span class="p">(</span><span class="n">output</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="Probe"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.Probe">[docs]</a><span class="k">class</span> <span class="nc">Probe</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Probe for a layer.</span>
+
+<span class="sd">    A probe attaches to a given :class:`torch.nn.Module` instance.</span>
+<span class="sd">    While attached, the object records any data produced by the module along</span>
+<span class="sd">    with the corresponding gradients. Use :func:`remove` to remove the probe.</span>
+
+<span class="sd">    Examples:</span>
+
+<span class="sd">        .. code:: python</span>
+
+<span class="sd">            module = torch.nn.ReLU</span>
+<span class="sd">            probe = Probe(module)</span>
+<span class="sd">            x = torch.randn(1, 10)</span>
+<span class="sd">            y = module(x)</span>
+<span class="sd">            z = y.sum()</span>
+<span class="sd">            z.backward()</span>
+<span class="sd">            print(probe.data[0].shape)</span>
+<span class="sd">            print(probe.data[0].grad.shape)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;input&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a probe attached to the specified module.</span>
+
+<span class="sd">        The probe intercepts calls to the module on the way forward, capturing</span>
+<span class="sd">        by default all the input activation tensor with their gradients.</span>
+
+<span class="sd">        The activation tensors are stored as a sequence :attr:`data`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            module (torch.nn.Module): Module to attach.</span>
+<span class="sd">            target (str): Choose from ``&#39;input&#39;`` or ``&#39;output&#39;``. Use</span>
+<span class="sd">                ``&#39;output&#39;`` to intercept the outputs of a module</span>
+<span class="sd">                instead of the inputs into the module. Default: ``&#39;input&#39;``.</span>
+
+<span class="sd">        .. Warning:</span>
+
+<span class="sd">            PyTorch module interface (at least until 1.1.0) is partially</span>
+<span class="sd">            broken. In particular, the hook functionality used by the probe</span>
+<span class="sd">            work properly only for atomic module, not for containers such as</span>
+<span class="sd">            sequences or for complex module that run several functions</span>
+<span class="sd">            internally.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hook</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">contrast</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">non_negative_contrast</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;inplace&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inplace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">inplace</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">==</span> <span class="s1">&#39;input&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hook</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">register_forward_pre_hook</span><span class="p">(</span><span class="n">_CatchInputs</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">==</span> <span class="s1">&#39;output&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hook</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">register_forward_hook</span><span class="p">(</span><span class="n">_CatchOutputs</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Probe.remove"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.Probe.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove the probe.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;inplace&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">inplace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inplace</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hook</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="kc">None</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">NullContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Null context.</span>
+
+<span class="sd">        This context does nothing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="get_pointing_gradient"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.get_pointing_gradient">[docs]</a><span class="k">def</span> <span class="nf">get_pointing_gradient</span><span class="p">(</span><span class="n">pred_y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a gradient tensor for the pointing game.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pred_y (:class:`torch.Tensor`): 4D tensor that the model outputs.</span>
+<span class="sd">        y (int): target label.</span>
+<span class="sd">        normalize (bool): If True, normalize the gradient tensor s.t. it</span>
+<span class="sd">            sums to 1. Default: ``True``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: gradient tensor with the same shape as</span>
+<span class="sd">        :attr:`pred_y`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pred_y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="k">assert</span> <span class="n">pred_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="n">backward_gradient</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pred_y</span><span class="p">)</span>
+    <span class="n">backward_gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">pred_y</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">backward_gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">/=</span> <span class="n">backward_gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">backward_gradient</span></div>
+
+
+<div class="viewcode-block" id="get_backward_gradient"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.get_backward_gradient">[docs]</a><span class="k">def</span> <span class="nf">get_backward_gradient</span><span class="p">(</span><span class="n">pred_y</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a gradient tensor that is either equal to :attr:`y` (if y is a</span>
+<span class="sd">    tensor with the same shape as pred_y) or a one-hot encoding in the channels</span>
+<span class="sd">    dimension.</span>
+
+<span class="sd">    :attr:`y` can be either an ``int``, an array-like list of integers,</span>
+<span class="sd">    or a tensor. If :attr:`y` is a tensor with the same shape as</span>
+<span class="sd">    :attr:`pred_y`, the function returns :attr:`y` unchanged.</span>
+
+<span class="sd">    Otherwise, :attr:`y` is interpreted as a list of class indices. These</span>
+<span class="sd">    are first unfolded/expanded to one index per batch element in</span>
+<span class="sd">    :attr:`pred_y` (i.e. along the first dimension). Then, this list</span>
+<span class="sd">    is further expanded to all spatial dimensions of :attr:`pred_y`.</span>
+<span class="sd">    (i.e. all but the first two dimensions of :attr:`pred_y`).</span>
+<span class="sd">    Finally, the function return a &quot;gradient&quot; tensor that is a one-hot</span>
+<span class="sd">    indicator tensor for these classes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pred_y (:class:`torch.Tensor`): model output tensor.</span>
+<span class="sd">        y (int, :class:`torch.Tensor`, list, or :class:`np.ndarray`): target</span>
+<span class="sd">            label(s) that can be cast to :class:`torch.long`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: gradient tensor with the same shape as</span>
+<span class="sd">            :attr:`pred_y`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pred_y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">pred_y</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">pred_y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span>
+    <span class="k">assert</span> <span class="n">y</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">long</span>
+
+    <span class="n">nspatial</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+    <span class="n">grad</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pred_y</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="p">,)</span> <span class="o">*</span> <span class="n">nspatial</span><span class="p">))</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+    <span class="n">grad</span><span class="o">.</span><span class="n">scatter_</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">grad</span></div>
+
+
+<div class="viewcode-block" id="get_module"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.get_module">[docs]</a><span class="k">def</span> <span class="nf">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns a specific layer in a model based.</span>
+
+<span class="sd">    :attr:`module` is either the name of a module (as given by the</span>
+<span class="sd">    :func:`named_modules` function for :class:`torch.nn.Module` objects) or</span>
+<span class="sd">    a :class:`torch.nn.Module` object. If :attr:`module` is a</span>
+<span class="sd">    :class:`torch.nn.Module` object, then :attr:`module` is returned unchanged.</span>
+<span class="sd">    If :attr:`module` is a str, the function searches for a module with the</span>
+<span class="sd">    name :attr:`module` and returns a :class:`torch.nn.Module` if found;</span>
+<span class="sd">    otherwise, ``None`` is returned.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): model in which to search for layer.</span>
+<span class="sd">        module (str or :class:`torch.nn.Module`): name of layer (str) or the</span>
+<span class="sd">            layer itself (:class:`torch.nn.Module`).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.nn.Module`: specific PyTorch layer (``None`` if the layer</span>
+<span class="sd">            isn&#39;t found).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">module</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">module</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">curr_module</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_modules</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">module</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">curr_module</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="gradient_to_saliency"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.gradient_to_saliency">[docs]</a><span class="k">def</span> <span class="nf">gradient_to_saliency</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a gradient to a saliency map.</span>
+
+<span class="sd">    The tensor :attr:`x` must have a valid gradient ``x.grad``.</span>
+<span class="sd">    The function then computes the saliency map :math:`s` given by:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{n,1,u} = \max_{0 \leq c &lt; C} |dx_{ncu}|</span>
+
+<span class="sd">    where :math:`n` is the instance index, :math:`c` the channel</span>
+<span class="sd">    index and :math:`u` the spatial multi-index (usually of dimension 2 for</span>
+<span class="sd">    images).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (Tensor): activation with gradient.</span>
+
+<span class="sd">    Return:</span>
+<span class="sd">        Tensor: saliency</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="resize_saliency"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.resize_saliency">[docs]</a><span class="k">def</span> <span class="nf">resize_saliency</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">saliency</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Resize a saliency map.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (:class:`torch.Tensor`): reference tensor.</span>
+<span class="sd">        saliency (:class:`torch.Tensor`): saliency map.</span>
+<span class="sd">        size (bool or tuple of int): if a tuple (i.e., (width, height),</span>
+<span class="sd">            resize :attr:`saliency` to :attr:`size`. If True, resize</span>
+<span class="sd">            :attr:`saliency: to the shape of :attr:`tensor`; otherwise,</span>
+<span class="sd">            return :attr:`saliency` unchanged.</span>
+<span class="sd">        mode (str): mode for :func:`torch.nn.functional.interpolate`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: Resized saliency map.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="c1"># width, height -&gt; height, width</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;resize must be True, False or a tuple.&quot;</span>
+        <span class="n">saliency</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+            <span class="n">saliency</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">align_corners</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">saliency</span></div>
+
+
+<div class="viewcode-block" id="attach_debug_probes"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.attach_debug_probes">[docs]</a><span class="k">def</span> <span class="nf">attach_debug_probes</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns an :class:`collections.OrderedDict` of :class:`Probe` objects for</span>
+<span class="sd">    all modules in the model if :attr:`debug` is ``True``; otherwise, returns</span>
+<span class="sd">    ``None``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): a model.</span>
+<span class="sd">        debug (bool, optional): if True, return an OrderedDict of Probe objects</span>
+<span class="sd">            for all modules in the model; otherwise returns ``None``.</span>
+<span class="sd">            Default: ``False``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`collections.OrderedDict`: dict of :class:`Probe` objects for</span>
+<span class="sd">            all modules in the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">debug_probes</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_modules</span><span class="p">():</span>
+        <span class="n">debug_probe_target</span> <span class="o">=</span> <span class="s2">&quot;input&quot;</span> <span class="k">if</span> <span class="n">module_name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="s2">&quot;output&quot;</span>
+        <span class="n">debug_probes</span><span class="p">[</span><span class="n">module_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Probe</span><span class="p">(</span>
+            <span class="n">module</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">debug_probe_target</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">debug_probes</span></div>
+
+
+<div class="viewcode-block" id="saliency"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.common.saliency">[docs]</a><span class="k">def</span> <span class="nf">saliency</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+             <span class="nb">input</span><span class="p">,</span>
+             <span class="n">target</span><span class="p">,</span>
+             <span class="n">saliency_layer</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+             <span class="n">resize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">resize_mode</span><span class="o">=</span><span class="s1">&#39;bilinear&#39;</span><span class="p">,</span>
+             <span class="n">smooth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+             <span class="n">context_builder</span><span class="o">=</span><span class="n">NullContext</span><span class="p">,</span>
+             <span class="n">gradient_to_saliency</span><span class="o">=</span><span class="n">gradient_to_saliency</span><span class="p">,</span>
+             <span class="n">get_backward_gradient</span><span class="o">=</span><span class="n">get_backward_gradient</span><span class="p">,</span>
+             <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply a backprop-based attribution method to an image.</span>
+
+<span class="sd">    The saliency method is specified by a suitable context factory</span>
+<span class="sd">    :attr:`context_builder`. This context is used to modify the backpropagation</span>
+<span class="sd">    algorithm to match a given visualization method. This:</span>
+
+<span class="sd">    1. Attaches a probe to the output tensor of :attr:`saliency_layer`,</span>
+<span class="sd">       which must be a layer in :attr:`model`. If no such layer is specified,</span>
+<span class="sd">       it selects the input tensor to :attr:`model`.</span>
+
+<span class="sd">    2. Uses the function :attr:`get_backward_gradient` to obtain a gradient</span>
+<span class="sd">       for the output tensor of the model. This function is passed</span>
+<span class="sd">       as input the output tensor as well as the parameter :attr:`target`.</span>
+<span class="sd">       By default, the :func:`get_backward_gradient` function is used.</span>
+<span class="sd">       The latter generates as gradient a one-hot vector selecting</span>
+<span class="sd">       :attr:`target`, usually the index of the class predicted by</span>
+<span class="sd">       :attr:`model`.</span>
+
+<span class="sd">    3. Evaluates :attr:`model` on :attr:`input` and then computes the</span>
+<span class="sd">       pseudo-gradient of the model with respect the selected tensor. This</span>
+<span class="sd">       calculation is controlled by :attr:`context_builder`.</span>
+
+<span class="sd">    4. Extract the pseudo-gradient at the selected tensor as a raw saliency</span>
+<span class="sd">       map.</span>
+
+<span class="sd">    5. Call :attr:`gradient_to_saliency` to obtain an actual saliency map.</span>
+<span class="sd">       This defaults to :func:`gradient_to_saliency` that takes the maximum</span>
+<span class="sd">       absolute value along the channel dimension of the pseudo-gradient</span>
+<span class="sd">       tensor.</span>
+
+<span class="sd">    6. Optionally resizes the saliency map thus obtained. By default,</span>
+<span class="sd">       this uses bilinear interpolation and resizes the saliency to the same</span>
+<span class="sd">       spatial dimension of :attr:`input`.</span>
+
+<span class="sd">    7. Optionally applies a Gaussian filter to the resized saliency map.</span>
+<span class="sd">       The standard deviation :attr:`sigma` of this filter is measured</span>
+<span class="sd">       as a fraction of the maxmum spatial dimension of the resized</span>
+<span class="sd">       saliency map.</span>
+
+<span class="sd">    8. Removes the probe.</span>
+
+<span class="sd">    9. Returns the saliency map or optionally a tuple with the saliency map</span>
+<span class="sd">       and a OrderedDict of Probe objects for all modules in the model, which</span>
+<span class="sd">       can be used for debugging.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): a model.</span>
+<span class="sd">        input (:class:`torch.Tensor`): input tensor.</span>
+<span class="sd">        target (int or :class:`torch.Tensor`): target label(s).</span>
+<span class="sd">        saliency_layer (str or :class:`torch.nn.Module`, optional): name of the</span>
+<span class="sd">            saliency layer (str) or the layer itself (:class:`torch.nn.Module`)</span>
+<span class="sd">            in the model at which to visualize. Default: ``&#39;&#39;`` (visualize</span>
+<span class="sd">            at input).</span>
+<span class="sd">        resize (bool or tuple, optional): if True, upsample saliency map to the</span>
+<span class="sd">            same size as :attr:`input`. It is also possible to specify a pair</span>
+<span class="sd">            (width, height) for a different size. Default: ``False``.</span>
+<span class="sd">        resize_mode (str, optional): upsampling method to use. Default:</span>
+<span class="sd">            ``&#39;bilinear&#39;``.</span>
+<span class="sd">        smooth (float, optional): amount of Gaussian smoothing to apply to the</span>
+<span class="sd">            saliency map. Default: ``0``.</span>
+<span class="sd">        context_builder (type, optional): type of context to use. Default:</span>
+<span class="sd">            :class:`NullContext`.</span>
+<span class="sd">        gradient_to_saliency (function, optional): function that converts the</span>
+<span class="sd">            pseudo-gradient signal to a saliency map. Default:</span>
+<span class="sd">            :func:`gradient_to_saliency`.</span>
+<span class="sd">        get_backward_gradient (function, optional): function that generates</span>
+<span class="sd">            gradient tensor to backpropagate. Default:</span>
+<span class="sd">            :func:`get_backward_gradient`.</span>
+<span class="sd">        debug (bool, optional): if True, also return an</span>
+<span class="sd">            :class:`collections.OrderedDict` of :class:`Probe` objects for</span>
+<span class="sd">            all modules in the model. Default: ``False``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor` or tuple: If :attr:`debug` is False, returns a</span>
+<span class="sd">        :class:`torch.Tensor` saliency map at :attr:`saliency_layer`.</span>
+<span class="sd">        Otherwise, returns a tuple of a :class:`torch.Tensor` saliency map</span>
+<span class="sd">        at :attr:`saliency_layer` and an :class:`collections.OrderedDict`</span>
+<span class="sd">        of :class:`Probe` objects for all modules in the model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Clear any existing gradient.</span>
+    <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">input</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+
+    <span class="c1"># Disable gradients for model parameters.</span>
+    <span class="n">orig_requires_grad</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+        <span class="n">orig_requires_grad</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span>
+        <span class="n">param</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Set model to eval mode.</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+        <span class="n">orig_is_training</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">orig_is_training</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># Attach debug probes to every module.</span>
+    <span class="n">debug_probes</span> <span class="o">=</span> <span class="n">attach_debug_probes</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+
+    <span class="c1"># Attach a probe to the saliency layer.</span>
+    <span class="n">probe_target</span> <span class="o">=</span> <span class="s1">&#39;input&#39;</span> <span class="k">if</span> <span class="n">saliency_layer</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="s1">&#39;output&#39;</span>
+    <span class="n">saliency_layer</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">saliency_layer</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">saliency_layer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;We could not find the saliency layer&#39;</span>
+    <span class="n">probe</span> <span class="o">=</span> <span class="n">Probe</span><span class="p">(</span><span class="n">saliency_layer</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">probe_target</span><span class="p">)</span>
+
+    <span class="c1"># Do a forward and backward pass.</span>
+    <span class="k">with</span> <span class="n">context_builder</span><span class="p">():</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">backward_gradient</span> <span class="o">=</span> <span class="n">get_backward_gradient</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">backward_gradient</span><span class="p">)</span>
+
+    <span class="c1"># Get saliency map from gradient.</span>
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">gradient_to_saliency</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Resize saliency map.</span>
+    <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">resize_saliency</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span>
+                                   <span class="n">saliency_map</span><span class="p">,</span>
+                                   <span class="n">resize</span><span class="p">,</span>
+                                   <span class="n">mode</span><span class="o">=</span><span class="n">resize_mode</span><span class="p">)</span>
+
+    <span class="c1"># Smooth saliency map.</span>
+    <span class="k">if</span> <span class="n">smooth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">saliency_map</span> <span class="o">=</span> <span class="n">imsmooth</span><span class="p">(</span>
+            <span class="n">saliency_map</span><span class="p">,</span>
+            <span class="n">sigma</span><span class="o">=</span><span class="n">smooth</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">saliency_map</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]),</span>
+            <span class="n">padding_mode</span><span class="o">=</span><span class="s1">&#39;replicate&#39;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Remove probe.</span>
+    <span class="n">probe</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+    <span class="c1"># Restore gradient saving for model parameters.</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+        <span class="n">param</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="n">orig_requires_grad</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+    <span class="c1"># Restore model&#39;s original mode.</span>
+    <span class="k">if</span> <span class="n">orig_is_training</span><span class="p">:</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">saliency_map</span><span class="p">,</span> <span class="n">debug_probes</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">saliency_map</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

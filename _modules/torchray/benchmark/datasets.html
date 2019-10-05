@@ -1,0 +1,776 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.benchmark.datasets &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../benchmark.html">torchray.benchmark</a> &raquo;</li>
+        
+      <li>torchray.benchmark.datasets</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.benchmark.datasets</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides a number of benchmark datasets:</span>
+
+<span class="sd">* ImageNet ILSVCR 12 and other *image folders* datasets (:class:`ImageFolder`).</span>
+<span class="sd">* PASCAL VOC (:class:`VOCDetection`).</span>
+<span class="sd">* MS COCO (:class:`CocoDetection`).</span>
+
+<span class="sd">The classes in this module extend corresponding classes in</span>
+<span class="sd">:mod:`torchvision.datasets` with functions for converting labels in various</span>
+<span class="sd">formats and similar. Some of these functions are also provided as</span>
+<span class="sd">&quot;stand alone&quot;.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;coco_as_class_ids&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;coco_as_image_size&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;coco_as_mask&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;voc_as_class_ids&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;voc_as_image_size&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;voc_as_mask&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ImageFolder&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;VOCDetection&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;CocoDetection&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;get_dataset&#39;</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">packaging</span> <span class="k">import</span> <span class="n">version</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data.dataloader</span> <span class="k">import</span> <span class="n">default_collate</span>
+<span class="kn">import</span> <span class="nn">torchvision</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">importlib.resources</span> <span class="k">as</span> <span class="nn">resources</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">importlib_resources</span> <span class="k">as</span> <span class="nn">resources</span>
+
+<span class="kn">from</span> <span class="nn">torchray.utils</span> <span class="k">import</span> <span class="n">get_config</span>
+
+<span class="k">with</span> <span class="n">resources</span><span class="o">.</span><span class="n">open_text</span><span class="p">(</span><span class="s1">&#39;torchray.benchmark&#39;</span><span class="p">,</span> <span class="s1">&#39;imagenet_classes.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">IMAGENET_CLASSES</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;List of the 1000 ImageNet ILSVRC class names.&quot;&quot;&quot;</span>
+
+<span class="n">VOC_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;aeroplane&#39;</span><span class="p">,</span> <span class="s1">&#39;bicycle&#39;</span><span class="p">,</span> <span class="s1">&#39;bird&#39;</span><span class="p">,</span> <span class="s1">&#39;boat&#39;</span><span class="p">,</span> <span class="s1">&#39;bottle&#39;</span><span class="p">,</span> <span class="s1">&#39;bus&#39;</span><span class="p">,</span> <span class="s1">&#39;car&#39;</span><span class="p">,</span> <span class="s1">&#39;cat&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;chair&#39;</span><span class="p">,</span> <span class="s1">&#39;cow&#39;</span><span class="p">,</span> <span class="s1">&#39;diningtable&#39;</span><span class="p">,</span> <span class="s1">&#39;dog&#39;</span><span class="p">,</span> <span class="s1">&#39;horse&#39;</span><span class="p">,</span> <span class="s1">&#39;motorbike&#39;</span><span class="p">,</span> <span class="s1">&#39;person&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;pottedplant&#39;</span><span class="p">,</span> <span class="s1">&#39;sheep&#39;</span><span class="p">,</span> <span class="s1">&#39;sofa&#39;</span><span class="p">,</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;tvmonitor&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;List of the 20 PASCAL VOC class names.&quot;&quot;&quot;</span>
+
+<span class="n">COCO_CLASSES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;person&#39;</span><span class="p">,</span> <span class="s1">&#39;bicycle&#39;</span><span class="p">,</span> <span class="s1">&#39;car&#39;</span><span class="p">,</span> <span class="s1">&#39;motorbike&#39;</span><span class="p">,</span> <span class="s1">&#39;aeroplane&#39;</span><span class="p">,</span> <span class="s1">&#39;bus&#39;</span><span class="p">,</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;truck&#39;</span><span class="p">,</span> <span class="s1">&#39;boat&#39;</span><span class="p">,</span> <span class="s1">&#39;traffic light&#39;</span><span class="p">,</span> <span class="s1">&#39;fire hydrant&#39;</span><span class="p">,</span> <span class="s1">&#39;stop sign&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;parking meter&#39;</span><span class="p">,</span> <span class="s1">&#39;bench&#39;</span><span class="p">,</span> <span class="s1">&#39;bird&#39;</span><span class="p">,</span> <span class="s1">&#39;cat&#39;</span><span class="p">,</span> <span class="s1">&#39;dog&#39;</span><span class="p">,</span> <span class="s1">&#39;horse&#39;</span><span class="p">,</span> <span class="s1">&#39;sheep&#39;</span><span class="p">,</span> <span class="s1">&#39;cow&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;elephant&#39;</span><span class="p">,</span> <span class="s1">&#39;bear&#39;</span><span class="p">,</span> <span class="s1">&#39;zebra&#39;</span><span class="p">,</span> <span class="s1">&#39;giraffe&#39;</span><span class="p">,</span> <span class="s1">&#39;backpack&#39;</span><span class="p">,</span> <span class="s1">&#39;umbrella&#39;</span><span class="p">,</span> <span class="s1">&#39;handbag&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;tie&#39;</span><span class="p">,</span> <span class="s1">&#39;suitcase&#39;</span><span class="p">,</span> <span class="s1">&#39;frisbee&#39;</span><span class="p">,</span> <span class="s1">&#39;skis&#39;</span><span class="p">,</span> <span class="s1">&#39;snowboard&#39;</span><span class="p">,</span> <span class="s1">&#39;sports ball&#39;</span><span class="p">,</span> <span class="s1">&#39;kite&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;baseball bat&#39;</span><span class="p">,</span> <span class="s1">&#39;baseball glove&#39;</span><span class="p">,</span> <span class="s1">&#39;skateboard&#39;</span><span class="p">,</span> <span class="s1">&#39;surfboard&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;tennis racket&#39;</span><span class="p">,</span> <span class="s1">&#39;bottle&#39;</span><span class="p">,</span> <span class="s1">&#39;wine glass&#39;</span><span class="p">,</span> <span class="s1">&#39;cup&#39;</span><span class="p">,</span> <span class="s1">&#39;fork&#39;</span><span class="p">,</span> <span class="s1">&#39;knife&#39;</span><span class="p">,</span> <span class="s1">&#39;spoon&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;bowl&#39;</span><span class="p">,</span> <span class="s1">&#39;banana&#39;</span><span class="p">,</span> <span class="s1">&#39;apple&#39;</span><span class="p">,</span> <span class="s1">&#39;sandwich&#39;</span><span class="p">,</span> <span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="s1">&#39;broccoli&#39;</span><span class="p">,</span> <span class="s1">&#39;carrot&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;hot dog&#39;</span><span class="p">,</span> <span class="s1">&#39;pizza&#39;</span><span class="p">,</span> <span class="s1">&#39;donut&#39;</span><span class="p">,</span> <span class="s1">&#39;cake&#39;</span><span class="p">,</span> <span class="s1">&#39;chair&#39;</span><span class="p">,</span> <span class="s1">&#39;sofa&#39;</span><span class="p">,</span> <span class="s1">&#39;pottedplant&#39;</span><span class="p">,</span> <span class="s1">&#39;bed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;diningtable&#39;</span><span class="p">,</span> <span class="s1">&#39;toilet&#39;</span><span class="p">,</span> <span class="s1">&#39;tvmonitor&#39;</span><span class="p">,</span> <span class="s1">&#39;laptop&#39;</span><span class="p">,</span> <span class="s1">&#39;mouse&#39;</span><span class="p">,</span> <span class="s1">&#39;remote&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;keyboard&#39;</span><span class="p">,</span> <span class="s1">&#39;cell phone&#39;</span><span class="p">,</span> <span class="s1">&#39;microwave&#39;</span><span class="p">,</span> <span class="s1">&#39;oven&#39;</span><span class="p">,</span> <span class="s1">&#39;toaster&#39;</span><span class="p">,</span> <span class="s1">&#39;sink&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;refrigerator&#39;</span><span class="p">,</span> <span class="s1">&#39;book&#39;</span><span class="p">,</span> <span class="s1">&#39;clock&#39;</span><span class="p">,</span> <span class="s1">&#39;vase&#39;</span><span class="p">,</span> <span class="s1">&#39;scissors&#39;</span><span class="p">,</span> <span class="s1">&#39;teddy bear&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;hair drier&#39;</span><span class="p">,</span> <span class="s1">&#39;toothbrush&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;List of the 80 COCO class names.&quot;&quot;&quot;</span>
+
+<span class="n">_VOC_CLASS_TO_INDEX</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">VOC_CLASSES</span><span class="p">)}</span>
+<span class="n">_COCO_CLASS_TO_INDEX</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span>
+    <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span>
+    <span class="mi">18</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">21</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">23</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">27</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">31</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">34</span><span class="p">,</span> <span class="mi">35</span><span class="p">,</span> <span class="mi">36</span><span class="p">,</span>
+    <span class="mi">37</span><span class="p">,</span> <span class="mi">38</span><span class="p">,</span> <span class="mi">39</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">41</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="mi">43</span><span class="p">,</span> <span class="mi">44</span><span class="p">,</span> <span class="mi">46</span><span class="p">,</span> <span class="mi">47</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">49</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">51</span><span class="p">,</span> <span class="mi">52</span><span class="p">,</span> <span class="mi">53</span><span class="p">,</span>
+    <span class="mi">54</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">57</span><span class="p">,</span> <span class="mi">58</span><span class="p">,</span> <span class="mi">59</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">61</span><span class="p">,</span> <span class="mi">62</span><span class="p">,</span> <span class="mi">63</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">65</span><span class="p">,</span> <span class="mi">67</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">73</span><span class="p">,</span>
+    <span class="mi">74</span><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="mi">76</span><span class="p">,</span> <span class="mi">77</span><span class="p">,</span> <span class="mi">78</span><span class="p">,</span> <span class="mi">79</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">81</span><span class="p">,</span> <span class="mi">82</span><span class="p">,</span> <span class="mi">84</span><span class="p">,</span> <span class="mi">85</span><span class="p">,</span> <span class="mi">86</span><span class="p">,</span> <span class="mi">87</span><span class="p">,</span> <span class="mi">88</span><span class="p">,</span> <span class="mi">89</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span>
+<span class="p">])}</span>
+
+
+<div class="viewcode-block" id="voc_as_class_ids"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.voc_as_class_ids">[docs]</a><span class="k">def</span> <span class="nf">voc_as_class_ids</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a VOC detection label to the list of class IDs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (dict): an image label in the VOC detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: List of ids of classes in the image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">][</span><span class="s1">&#39;object&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">class_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">obj</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">class_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">objs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">({</span><span class="n">_VOC_CLASS_TO_INDEX</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">class_names</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="voc_as_mask"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.voc_as_mask">[docs]</a><span class="k">def</span> <span class="nf">voc_as_mask</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a VOC detection label to a mask.</span>
+
+<span class="sd">    Return a boolean mask selecting the region contained in the bounding boxes</span>
+<span class="sd">    of :attr:`class_id`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (dict): an image label in the VOC detection format.</span>
+<span class="sd">        class_id (int): ID of the requested class.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: 2D boolean tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">weight</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">voc_as_image_size</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">height</span><span class="p">,</span> <span class="n">weight</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">][</span><span class="s1">&#39;object&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">objs</span> <span class="o">=</span> <span class="p">[</span><span class="n">objs</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="n">this_class_id</span> <span class="o">=</span> <span class="n">_VOC_CLASS_TO_INDEX</span><span class="p">[</span><span class="n">obj</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">this_class_id</span> <span class="o">!=</span> <span class="n">class_id</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;bndbox&#39;</span><span class="p">]</span>
+        <span class="n">ymin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;ymin&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">ymax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;ymax&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;xmin&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;xmax&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">mask</span><span class="p">[</span><span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;1.2.0&quot;</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
+
+
+<div class="viewcode-block" id="voc_as_image_size"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.voc_as_image_size">[docs]</a><span class="k">def</span> <span class="nf">voc_as_image_size</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a VOC detection label to the image size.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (dict): an image label in the VOC detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: width, height of image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">][</span><span class="s1">&#39;width&#39;</span><span class="p">])</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">][</span><span class="s1">&#39;height&#39;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span></div>
+
+
+<span class="k">def</span> <span class="nf">voc_as_image_name</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a VOC detection label to the image name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (dict): an image label in the VOC detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">][</span><span class="s1">&#39;filename&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="coco_as_class_ids"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.coco_as_class_ids">[docs]</a><span class="k">def</span> <span class="nf">coco_as_class_ids</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a COCO detection label to the list of class IDs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (list of dict): an image label in the VOC detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: List of ids of classes in the image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">({</span><span class="n">_COCO_CLASS_TO_INDEX</span><span class="p">[</span><span class="n">ann</span><span class="p">[</span><span class="s1">&#39;category_id&#39;</span><span class="p">]]</span> <span class="k">for</span> <span class="n">ann</span> <span class="ow">in</span> <span class="n">label</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="coco_as_mask"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.coco_as_mask">[docs]</a><span class="k">def</span> <span class="nf">coco_as_mask</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a COCO detection label to a mask.</span>
+
+<span class="sd">    Return a boolean mask for the regions of :attr:`class_id`.</span>
+
+<span class="sd">    If the label is the empty list, because there are no objects at all in the</span>
+<span class="sd">    image, the function returns ``None``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (array of dict): an image label in the VOC detection format.</span>
+<span class="sd">        class_id (int): ID of the requested class.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: 2D boolean tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">class_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mask</span>
+    <span class="n">image_id</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;image_id&#39;</span><span class="p">]</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">loadImgs</span><span class="p">(</span><span class="n">image_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">ann</span> <span class="ow">in</span> <span class="n">label</span><span class="p">:</span>
+        <span class="n">this_class_id</span> <span class="o">=</span> <span class="n">_COCO_CLASS_TO_INDEX</span><span class="p">[</span><span class="n">ann</span><span class="p">[</span><span class="s1">&#39;category_id&#39;</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">class_id</span> <span class="o">==</span> <span class="n">this_class_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                    <span class="n">image</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">],</span>
+                    <span class="n">image</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">uint8</span>
+                <span class="p">)</span>
+            <span class="n">this_mask</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">annToMask</span><span class="p">(</span><span class="n">ann</span><span class="p">)</span>
+            <span class="n">mask</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">this_mask</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;1.2.0&quot;</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
+
+
+<div class="viewcode-block" id="coco_as_image_size"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.coco_as_image_size">[docs]</a><span class="k">def</span> <span class="nf">coco_as_image_size</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a COCO detection label to the image size.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (list of dict): an image label in the VOC detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: width, height of image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">image_id</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;image_id&#39;</span><span class="p">]</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">loadImgs</span><span class="p">(</span><span class="n">image_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">],</span> <span class="n">image</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span></div>
+
+
+<span class="k">def</span> <span class="nf">coco_as_image_name</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a COCO detection label to the image name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        label (list of dict): an image label in the COCO detection format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: image name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">image_id</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;image_id&#39;</span><span class="p">]</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">loadImgs</span><span class="p">(</span><span class="n">image_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="s1">&#39;file_name&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="ImageFolder"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.ImageFolder">[docs]</a><span class="k">class</span> <span class="nc">ImageFolder</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">ImageFolder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Image folder dataset.</span>
+
+<span class="sd">    This class extends :class:`torchvision.datasets.ImageFolder`.</span>
+<span class="sd">    Its constructor supports the following additional arguments:</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        limiter (int, optional): limit the dataset to :attr:`limiter` images,</span>
+<span class="sd">            picking from each class in a round-robin fashion.</span>
+<span class="sd">            Default: ``None``.</span>
+<span class="sd">        full_classes (list of str, optional):  list of full class names.</span>
+<span class="sd">            Default: ``None``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        selection (list of int): indices of the active images.</span>
+<span class="sd">        full_classes (list of str): class names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">full_classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ImageFolder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">num_images</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ImageFolder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_images</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_classes</span> <span class="o">=</span> <span class="n">full_classes</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">limiter</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># Pick one sample per class in a round-robin manner.</span>
+        <span class="n">class_indices</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span> <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="n">label</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="n">triplets</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">y</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">class_indices</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">triplets</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">triplets</span><span class="p">[:</span><span class="nb">min</span><span class="p">(</span><span class="n">limiter</span><span class="p">,</span> <span class="n">num_images</span><span class="p">)]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ImageFolder.get_image_url"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.ImageFolder.get_image_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the URL of an image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i (int): image index.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: image URL.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="VOCDetection"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection">[docs]</a><span class="k">class</span> <span class="nc">VOCDetection</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">VOCDetection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;PASCAL VOC Detection dataset.</span>
+
+<span class="sd">    This class extends :class:`torchvision.datasets.VOCDetection`.</span>
+<span class="sd">    Its constructor supports the following additional arguments:</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        limiter (int, optional): limit the dataset to the first :attr:`limiter`</span>
+<span class="sd">            images. Default: ``None``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        selection (list of int): indices of the active images.</span>
+<span class="sd">        classes (list of str): class names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># The default VOCDetection is too strict and raises an error if ones</span>
+    <span class="c1"># tries to load a test set, although this is often used in the literature.</span>
+    <span class="k">def</span> <span class="nf">_compatible_init</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">root</span><span class="p">,</span>
+            <span class="n">year</span><span class="o">=</span><span class="s1">&#39;2012&#39;</span><span class="p">,</span>
+            <span class="n">image_set</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">,</span>
+            <span class="n">download</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">target_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">transforms</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">voc</span><span class="o">.</span><span class="n">VOCDetection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">root</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">target_transform</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="n">year</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">voc</span><span class="o">.</span><span class="n">DATASET_YEAR_DICT</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">voc</span><span class="o">.</span><span class="n">DATASET_YEAR_DICT</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">md5</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">voc</span><span class="o">.</span><span class="n">DATASET_YEAR_DICT</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="s1">&#39;md5&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_set</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">verify_str_arg</span><span class="p">(</span><span class="n">image_set</span><span class="p">,</span> <span class="s2">&quot;image_set&quot;</span><span class="p">,</span>
+                                                                   <span class="p">(</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;trainval&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">))</span>
+
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">voc</span><span class="o">.</span><span class="n">DATASET_YEAR_DICT</span><span class="p">[</span><span class="n">year</span><span class="p">][</span><span class="s1">&#39;base_dir&#39;</span><span class="p">]</span>
+        <span class="n">voc_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">)</span>
+        <span class="n">image_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">voc_root</span><span class="p">,</span> <span class="s1">&#39;JPEGImages&#39;</span><span class="p">)</span>
+        <span class="n">annotation_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">voc_root</span><span class="p">,</span> <span class="s1">&#39;Annotations&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">download</span><span class="p">:</span>
+            <span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">download_extract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">md5</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">voc_root</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Dataset not found or corrupted.&#39;</span>
+                               <span class="o">+</span> <span class="s1">&#39; You can use download=True to download it&#39;</span><span class="p">)</span>
+
+        <span class="n">splits_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">voc_root</span><span class="p">,</span> <span class="s1">&#39;ImageSets/Main&#39;</span><span class="p">)</span>
+
+        <span class="n">split_f</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">splits_dir</span><span class="p">,</span> <span class="n">image_set</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">split_f</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">file_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">image_dir</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotations</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">annotation_dir</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="s2">&quot;.xml&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">file_names</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotations</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                 <span class="n">limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;0.3&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compatible_init</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">VOCDetection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">num_images</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">VOCDetection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">limiter</span><span class="p">:</span>
+            <span class="n">num_images</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_images</span><span class="p">,</span> <span class="n">limiter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_images</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">VOC_CLASSES</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VOCDetection.get_image_url"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.get_image_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the URL of an image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i (int): Image index.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Image URL.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span></div>
+
+<div class="viewcode-block" id="VOCDetection.as_class_ids"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.as_class_ids">[docs]</a>    <span class="k">def</span> <span class="nf">as_class_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to list of class IDs.</span>
+
+<span class="sd">        The same as :func:`voc_as_class_ids`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">voc_as_class_ids</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VOCDetection.as_mask"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.as_mask">[docs]</a>    <span class="k">def</span> <span class="nf">as_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to a mask.</span>
+
+<span class="sd">        The same as :func:`voc_as_mask`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">voc_as_mask</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VOCDetection.as_image_size"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.as_image_size">[docs]</a>    <span class="k">def</span> <span class="nf">as_image_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to the image size.</span>
+
+<span class="sd">        The same as :func:`voc_as_image_size`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">voc_as_image_size</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VOCDetection.as_image_name"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.as_image_name">[docs]</a>    <span class="k">def</span> <span class="nf">as_image_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to the image name.</span>
+
+<span class="sd">        The same as :func:`voc_as_image_name`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">voc_as_image_name</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="VOCDetection.collate"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.VOCDetection.collate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">collate</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Collate function for use in a data loader.&quot;&quot;&quot;</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">default_collate</span><span class="p">([</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">])</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">labels</span></div></div>
+
+
+<div class="viewcode-block" id="CocoDetection"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection">[docs]</a><span class="k">class</span> <span class="nc">CocoDetection</span><span class="p">(</span><span class="n">torchvision</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">CocoDetection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;COCO Detection dataset.</span>
+
+<span class="sd">    The data can be downloaded at `&lt;http://cocodataset.org/#download&gt;`__.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        limiter (int, optional): limit the dataset to the first :attr:`limiter`</span>
+<span class="sd">            images. Default: ``None``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        classes (list of str): class names.</span>
+<span class="sd">        selection (list of int): indices of the active images.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">annFile</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CocoDetection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">annFile</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subset</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">annFile</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_images</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">CocoDetection</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">limiter</span><span class="p">:</span>
+            <span class="n">num_images</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_images</span><span class="p">,</span> <span class="n">limiter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_images</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">COCO_CLASSES</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CocoDetection.get_image_url"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.get_image_url">[docs]</a>    <span class="k">def</span> <span class="nf">get_image_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return image url.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i (int): image index.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: path to image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">image_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">loadImgs</span><span class="p">(</span><span class="n">image_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;file_name&#39;</span><span class="p">]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">images</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;list of str: paths to images.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">coco</span><span class="o">.</span><span class="n">loadImgs</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;file_name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">]</span>
+
+<div class="viewcode-block" id="CocoDetection.as_class_ids"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.as_class_ids">[docs]</a>    <span class="k">def</span> <span class="nf">as_class_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to list of class IDs.</span>
+
+<span class="sd">        The same as :func:`coco_as_class_ids`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">coco_as_class_ids</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CocoDetection.as_mask"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.as_mask">[docs]</a>    <span class="k">def</span> <span class="nf">as_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to a mask.</span>
+
+<span class="sd">        The same as :func:`coco_as_mask`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">coco_as_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">class_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CocoDetection.as_image_size"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.as_image_size">[docs]</a>    <span class="k">def</span> <span class="nf">as_image_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to the image size.</span>
+
+<span class="sd">        The same as :func:`coco_as_image_size`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">coco_as_image_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CocoDetection.as_image_name"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.as_image_name">[docs]</a>    <span class="k">def</span> <span class="nf">as_image_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a label to the image name.</span>
+
+<span class="sd">        The same as :func:`coco_as_image_name.`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">coco_as_image_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CocoDetection.collate"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.CocoDetection.collate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">collate</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Collate function for use in a data loader.&quot;&quot;&quot;</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">default_collate</span><span class="p">([</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">])</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">labels</span></div></div>
+
+
+<div class="viewcode-block" id="get_dataset"><a class="viewcode-back" href="../../../benchmark.html#torchray.benchmark.datasets.get_dataset">[docs]</a><span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">subset</span><span class="p">,</span>
+                <span class="n">dataset_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">annotation_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">transform</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">limiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">download</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a :class:`torch.data.Dataset`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): name of the dataset; choose from ``&quot;imagenet&quot;``, ``&quot;voc&quot;``</span>
+<span class="sd">            or ``&quot;coco&quot;``.</span>
+<span class="sd">        subset (str): name of the dataset subset or split.</span>
+<span class="sd">        dataset_dir (str, optional): Path to root directory containing data.</span>
+<span class="sd">            Default: ``None``.</span>
+<span class="sd">        annotation_dir (str, optional):</span>
+<span class="sd">            Path to root directory containing annotations. Required for COCO</span>
+<span class="sd">            only. Default: ``None``.</span>
+<span class="sd">        transform (function, optional): input transformation function.</span>
+<span class="sd">            Default: ``None``.</span>
+<span class="sd">        limiter (int, optional): limit the dataset to :attr:`limiter`</span>
+<span class="sd">            images. Default: ``None``.</span>
+<span class="sd">        download (bool, optional): If True and :attr:`name` is ``&quot;voc&quot;``,</span>
+<span class="sd">            download the dataset to :attr:`dataset_dir`. Default: ``False``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.data.Dataset`: the requested dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">this</span> <span class="k">if</span> <span class="n">this</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span>
+
+    <span class="k">if</span> <span class="s1">&#39;imagenet&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">dataset_dir</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">dataset_dir</span><span class="p">,</span>
+                          <span class="n">get_config</span><span class="p">()[</span><span class="s1">&#39;benchmark&#39;</span><span class="p">][</span><span class="s1">&#39;imagenet_dir&#39;</span><span class="p">])</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">ImageFolder</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dataset_dir</span><span class="p">,</span> <span class="n">subset</span><span class="p">),</span>
+                              <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                              <span class="n">limiter</span><span class="o">=</span><span class="n">limiter</span><span class="p">,</span>
+                              <span class="n">full_classes</span><span class="o">=</span><span class="n">IMAGENET_CLASSES</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="s1">&#39;voc&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">dataset_dir</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">dataset_dir</span><span class="p">,</span> <span class="n">get_config</span><span class="p">()[</span><span class="s1">&#39;benchmark&#39;</span><span class="p">][</span><span class="s1">&#39;voc_dir&#39;</span><span class="p">])</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">VOCDetection</span><span class="p">(</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">dataset_dir</span><span class="p">,</span>
+            <span class="n">year</span><span class="o">=</span><span class="n">year</span><span class="p">,</span>
+            <span class="n">image_set</span><span class="o">=</span><span class="n">subset</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+            <span class="n">download</span><span class="o">=</span><span class="n">download</span><span class="p">,</span>
+            <span class="n">limiter</span><span class="o">=</span><span class="n">limiter</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="s1">&#39;coco&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">dataset_dir</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">dataset_dir</span><span class="p">,</span> <span class="n">get_config</span><span class="p">()[</span><span class="s1">&#39;benchmark&#39;</span><span class="p">][</span><span class="s1">&#39;coco_dir&#39;</span><span class="p">])</span>
+        <span class="n">annotation_dir</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">annotation_dir</span><span class="p">,</span>
+                             <span class="n">get_config</span><span class="p">()[</span><span class="s1">&#39;benchmark&#39;</span><span class="p">][</span><span class="s1">&#39;coco_anno_dir&#39;</span><span class="p">])</span>
+
+        <span class="n">im_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dataset_dir</span><span class="p">,</span> <span class="n">subset</span><span class="p">)</span>
+        <span class="n">ann_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">annotation_dir</span><span class="p">,</span>
+                                <span class="s1">&#39;instances_</span><span class="si">{}</span><span class="s1">.json&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subset</span><span class="p">))</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">CocoDetection</span><span class="p">(</span><span class="n">im_path</span><span class="p">,</span>
+                                <span class="n">ann_path</span><span class="p">,</span>
+                                <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                                <span class="n">limiter</span><span class="o">=</span><span class="n">limiter</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Unknown dataset </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dataset</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

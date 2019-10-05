@@ -1,0 +1,658 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.utils &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>torchray.utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Utility functions.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="k">import</span> <span class="n">urlparse</span>
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="k">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="n">EPSILON_DOUBLE</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">2.220446049250313e-16</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<span class="n">EPSILON_SINGLE</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">1.19209290E-07</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">SQRT_TWO_DOUBLE</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">SQRT_TWO_SINGLE</span> <span class="o">=</span> <span class="n">SQRT_TWO_DOUBLE</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">_DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mongo&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;server&#39;</span><span class="p">:</span> <span class="s1">&#39;mongod&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;port&#39;</span><span class="p">:</span> <span class="mi">27017</span><span class="p">,</span>
+        <span class="s1">&#39;database&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/db&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;benchmark&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;voc_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/datasets/voc&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;coco_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/datasets/coco&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;coco_anno_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/datasets/coco/annotations&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;imagenet_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/datasets/imagenet&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;models_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data/models&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;experiments_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data&#39;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">_config_read</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="get_config"><a class="viewcode-back" href="../../utils.html#torchray.utils.get_config">[docs]</a><span class="k">def</span> <span class="nf">get_config</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Read the TorchRay config file.</span>
+
+<span class="sd">    Read the config file from the current directory or the user&#39;s home</span>
+<span class="sd">    directory and return the configuration.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_config_read</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">_DEFAULT_CONFIG</span>
+    <span class="k">if</span> <span class="n">_config_read</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="k">def</span> <span class="nf">_update</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">delta</span><span class="p">:</span>
+                    <span class="n">source</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_update</span><span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">delta</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">delta</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="c1"># Catch name errors in config file.</span>
+                <span class="k">assert</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">source</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">delta</span>
+        <span class="k">return</span> <span class="n">source</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">_DEFAULT_CONFIG</span>
+    <span class="k">for</span> <span class="n">curr_dir</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">curdir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~&#39;</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">curr_dir</span><span class="p">,</span> <span class="s1">&#39;.torchrayrc&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="n">config_</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+                <span class="n">_update</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">config_</span><span class="p">)</span>
+                <span class="k">break</span>
+
+    <span class="n">_config_read</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="get_device"><a class="viewcode-back" href="../../utils.html#torchray.utils.get_device">[docs]</a><span class="k">def</span> <span class="nf">get_device</span><span class="p">(</span><span class="n">gpu</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get the :class`torch.device` to use; specify device with :attr:`gpu`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        gpu (int, optional): Index of the GPU device; specify ``None`` to</span>
+<span class="sd">            force CPU. Default: ``0``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.device`: device to use.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span>
+        <span class="n">f</span><span class="s1">&#39;cuda:</span><span class="si">{gpu}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">gpu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">device</span></div>
+
+
+<div class="viewcode-block" id="xmkdir"><a class="viewcode-back" href="../../utils.html#torchray.utils.xmkdir">[docs]</a><span class="k">def</span> <span class="nf">xmkdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create a directory path recursively.</span>
+
+<span class="sd">    The function creates :attr:`path` if the directory does not exist.</span>
+
+<span class="sd">    Args::</span>
+<span class="sd">        path (str): path to create.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileExistsError</span><span class="p">:</span>
+            <span class="c1"># Race condition in multi-processing.</span>
+            <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="is_url"><a class="viewcode-back" href="../../utils.html#torchray.utils.is_url">[docs]</a><span class="k">def</span> <span class="nf">is_url</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Check if an object is an URL.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj (object): object to test.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: ``True`` if :attr:`x` is an URL string; otherwise ``False``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">result</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">path</span><span class="p">])</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="tensor_to_im"><a class="viewcode-back" href="../../utils.html#torchray.utils.tensor_to_im">[docs]</a><span class="k">def</span> <span class="nf">tensor_to_im</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Reshape a tensor as a grayscale image stack.</span>
+
+<span class="sd">    The function reshapes the tensor :attr:`x` of size</span>
+<span class="sd">    :math:`N\times K\times H\times W`</span>
+<span class="sd">    to have shape :math:`(NK)\times 1\times H\times W`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (:class:`torch.Tensor`): tensor to rearrange.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: Reshaped tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">tensor</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:])[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span></div>
+
+
+<div class="viewcode-block" id="pil_to_tensor"><a class="viewcode-back" href="../../utils.html#torchray.utils.pil_to_tensor">[docs]</a><span class="k">def</span> <span class="nf">pil_to_tensor</span><span class="p">(</span><span class="n">pil_image</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a PIL image to a tensor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pil_image (:class:`PIL.Image`): PIL image.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: the image as a :math:`3\times H\times W` tensor</span>
+<span class="sd">        in the [0, 1] range.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pil_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pil_image</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pil_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">pil_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">pil_image</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">255</span></div>
+
+
+<div class="viewcode-block" id="im_to_numpy"><a class="viewcode-back" href="../../utils.html#torchray.utils.im_to_numpy">[docs]</a><span class="k">def</span> <span class="nf">im_to_numpy</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Convert a tensor image to a NumPy image.</span>
+
+<span class="sd">    The function converts the :math:`K\times H\times W` tensor :attr:`tensor`</span>
+<span class="sd">    to a corresponding :math:`H\times W\times K` NumPy array.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (:class:`torch.Tensor`): input tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`numpy.ndarray`: NumPy array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tensor_reshaped</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="o">*</span><span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tensor_reshaped</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="imread"><a class="viewcode-back" href="../../utils.html#torchray.utils.imread">[docs]</a><span class="k">def</span> <span class="nf">imread</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">as_pil</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">resize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_rgb</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read an image as a tensor.</span>
+
+<span class="sd">    The function reads the image :attr:`file` as a PyTorch tensor.</span>
+<span class="sd">    `file` can also be an URL.</span>
+
+<span class="sd">    To reshape the image use the option :attr:`reshape`, passing the desired</span>
+<span class="sd">    shape ``(W, H)`` as tuple. Passing an integer sets the shortest side to</span>
+<span class="sd">    that length while preserving the aspect ratio.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file (str): Path or ULR to the image.</span>
+<span class="sd">        resize (float, int, tuple or list): Resize the image to this size.</span>
+<span class="sd">        as_pil (bool): If ``True``, returns the PIL image instead of converting</span>
+<span class="sd">            to a tensor.</span>
+<span class="sd">        to_rgb (optional, bool): If `True`, convert the PIL image to RGB.</span>
+<span class="sd">            Default: ``False``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`:</span>
+<span class="sd">            The image read as a :math:`3\times H\times W` tensor in</span>
+<span class="sd">            the [0, 1] range.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read an example image as a numpy array.</span>
+    <span class="k">if</span> <span class="n">is_url</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;User-Agent&#39;</span><span class="p">:</span> <span class="s1">&#39;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 &#39;</span>
+                          <span class="s1">&#39;(KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.&#39;</span>
+                          <span class="s1">&#39;11&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;text/html,application/xhtml+xml,application/xml;q=0.9,*&#39;</span>
+                      <span class="s1">&#39;/*;q=0.8&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Accept-Charset&#39;</span><span class="p">:</span> <span class="s1">&#39;ISO-8859-1,utf-8;q=0.7,*;q=0.3&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Accept-Encoding&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Accept-Language&#39;</span><span class="p">:</span> <span class="s1">&#39;en-US,en;q=0.8&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;Connection&#39;</span><span class="p">:</span> <span class="s1">&#39;keep-alive&#39;</span>
+        <span class="p">}</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">hdr</span><span class="p">)</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">to_rgb</span><span class="p">:</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;RGB&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">resize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resize</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resize</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">resize</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">resize</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">scale</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">resize</span> <span class="o">!=</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">resize</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">ANTIALIAS</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">as_pil</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">img</span>
+    <span class="k">return</span> <span class="n">pil_to_tensor</span><span class="p">(</span><span class="n">img</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="imsc"><a class="viewcode-back" href="../../utils.html#torchray.utils.imsc">[docs]</a><span class="k">def</span> <span class="nf">imsc</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;lanczos&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Rescale and displays an image represented as a img.</span>
+
+<span class="sd">    The function scales the img :attr:`im` to the [0 ,1] range.</span>
+<span class="sd">    The img is assumed to have shape :math:`3\times H\times W` (RGB)</span>
+<span class="sd">    :math:`1\times H\times W` (grayscale).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        img (:class:`torch.Tensor` or :class:`PIL.Image`): image.</span>
+<span class="sd">        quiet (bool, optional): if False, do not display image.</span>
+<span class="sd">            Default: ``False``.</span>
+<span class="sd">        lim (list, optional): maximum and minimum intensity value for</span>
+<span class="sd">            rescaling. Default: ``None``.</span>
+<span class="sd">        interpolation (str, optional): The interpolation mode to use with</span>
+<span class="sd">            :func:`matplotlib.pyplot.imshow` (e.g. ``&#39;lanczos&#39;`` or</span>
+<span class="sd">            ``&#39;nearest&#39;``). Default: ``&#39;lanczos&#39;``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: Rescaled image img.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">pil_to_tensor</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+    <span class="n">handle</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">lim</span><span class="p">:</span>
+            <span class="n">lim</span> <span class="o">=</span> <span class="p">[</span><span class="n">img</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">img</span><span class="o">.</span><span class="n">max</span><span class="p">()]</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">img</span> <span class="o">-</span> <span class="n">lim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># also makes a copy</span>
+        <span class="n">img</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">lim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">lim</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="n">bitmap</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span>
+                                <span class="o">*</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            <span class="n">handle</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span>
+                <span class="n">bitmap</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">curr_ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+            <span class="n">curr_ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">img</span><span class="p">,</span> <span class="n">handle</span></div>
+
+
+<div class="viewcode-block" id="resample"><a class="viewcode-back" href="../../utils.html#torchray.utils.resample">[docs]</a><span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target_size</span><span class="p">,</span> <span class="n">transform</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Spatially resample a tensor.</span>
+
+<span class="sd">    The function resamples the :attr:`source` tensor generating a</span>
+<span class="sd">    :attr:`target` tensors of size :attr:`target_size`. Resampling uses the</span>
+<span class="sd">    transform :attr:`transform`, specified as a :math:`2\times 2` matrix in the</span>
+<span class="sd">    form</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \begin{bmatrix}</span>
+<span class="sd">        s_u &amp; t_u\\</span>
+<span class="sd">        s_v &amp; t_v</span>
+<span class="sd">        \end{bmatrix}</span>
+
+<span class="sd">    where :math:`s_u` is the scaling factor along the horizontal spatial</span>
+<span class="sd">    direction, :math:`t_u` the horizontal offset, and :math:`s_v, t_v` the</span>
+<span class="sd">    corresponding quantity for the vertical direction.</span>
+
+<span class="sd">    Internally, the function uses :func:`torch.nn.functional.grid_sample` with</span>
+<span class="sd">    bilinear interpolation and zero padding.</span>
+
+<span class="sd">    The transformation defines the forward</span>
+<span class="sd">    mapping, so that a pixel :math:`(u,v)` in the source tensro is mapped to</span>
+<span class="sd">    pixel :math:`u&#39; = s_u  u + t_u, v&#39; = s_v v + tv`.</span>
+
+<span class="sd">    The reference frames are defined as follows. Pixels are unit squares, so</span>
+<span class="sd">    that a :math:`H\times W` tensor maps to the rectangle :math:`[0, W) \times</span>
+<span class="sd">    [0, H)`. Hence element :math:`x_{ncij}` of a tensor :math:`x` maps</span>
+<span class="sd">    to a unit square whose center is :math:`(u,v) = (i + 1/2, j+1/2)`.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        In order to stretch an :math:`H \times W` source tensor to a target</span>
+<span class="sd">        :math:`H&#39; \times W&#39;` tensor, one would use the transformation matrix</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \begin{bmatrix}</span>
+<span class="sd">            W&#39;/W &amp; 0\\</span>
+<span class="sd">            H&#39;/H &amp; 0\\</span>
+<span class="sd">            \end{bmatrix}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source (:class:`torch.Tensor`): :math:`N\times C\times H\times W`</span>
+<span class="sd">            tensor.</span>
+<span class="sd">        target_size (tuple of int): target size.</span>
+<span class="sd">        transform (:class:`torch.Tensor`): :math:`2\times 2` transformation</span>
+<span class="sd">            tensor.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: resampled tensor.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">dtype</span>
+    <span class="n">dev</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">device</span>
+
+    <span class="n">height_</span><span class="p">,</span> <span class="n">width_</span> <span class="o">=</span> <span class="n">target_size</span>
+    <span class="n">ur_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">width_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span>
+    <span class="n">vr_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">height_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span>
+
+    <span class="n">height</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+    <span class="n">ur</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="n">ur_</span> <span class="o">+</span> <span class="n">transform</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">transform</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">weight</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">vr</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="n">vr_</span> <span class="o">+</span> <span class="n">transform</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">transform</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">height</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="n">v</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">vr</span><span class="p">,</span> <span class="n">ur</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">source</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">grid_sample</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="imsmooth"><a class="viewcode-back" href="../../utils.html#torchray.utils.imsmooth">[docs]</a><span class="k">def</span> <span class="nf">imsmooth</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span>
+             <span class="n">sigma</span><span class="p">,</span>
+             <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+             <span class="n">padding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+             <span class="n">padding_mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span>
+             <span class="n">padding_value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Apply a 2D Gaussian filter to a tensor.</span>
+
+<span class="sd">    The 2D filter itself is implementing by separating the 2D convolution in</span>
+<span class="sd">    two 1D convolutions, first along the vertical direction and then along</span>
+<span class="sd">    the horizontal one. Each 1D Gaussian kernel is given by:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        f_i \propto \exp\left(-\frac{1}{2} \frac{i^2}{\sigma^2} \right),</span>
+<span class="sd">            ~~~ i \in \{-W,\dots,W\},</span>
+<span class="sd">            ~~~ W = \lceil 4\sigma \rceil.</span>
+
+<span class="sd">    This kernel is normalized to sum to one exactly. Given the latter, the</span>
+<span class="sd">    function calls `torch.nn.functional.conv2d`</span>
+<span class="sd">    to perform the actual convolution. Various padding parameters and the</span>
+<span class="sd">    stride are passed to the latter.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tensor (:class:`torch.Tensor`): :math:`N\times C\times H\times W`</span>
+<span class="sd">            image tensor.</span>
+<span class="sd">        sigma (float): standard deviation of the Gaussian kernel.</span>
+<span class="sd">        stride (int, optional): subsampling factor. Default: ``1``.</span>
+<span class="sd">        padding (int, optional): extra padding. Default: ``0``.</span>
+<span class="sd">        padding_mode (str, optional): ``&#39;constant&#39;``, ``&#39;reflect&#39;`` or</span>
+<span class="sd">            ``&#39;replicate&#39;``. Default: ``&#39;constant&#39;``.</span>
+<span class="sd">        padding_value (float, optional): constant value for the `constant`</span>
+<span class="sd">            padding mode. Default: ``0``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: :math:`N\times C\times H\times W` tensor with</span>
+<span class="sd">        the smoothed images.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">sigma</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">)</span>
+    <span class="n">filt</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">width</span><span class="p">,</span>
+                         <span class="n">width</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                         <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                         <span class="n">device</span><span class="o">=</span><span class="n">tensor</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">/</span>
+            <span class="p">(</span><span class="n">SQRT_TWO_SINGLE</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">+</span> <span class="n">EPSILON_SINGLE</span><span class="p">))</span>
+    <span class="n">filt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">filt</span> <span class="o">*</span> <span class="n">filt</span><span class="p">)</span>
+    <span class="n">filt</span> <span class="o">/=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">filt</span><span class="p">)</span>
+    <span class="n">num_channels</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">width</span> <span class="o">+</span> <span class="n">padding</span>
+    <span class="k">if</span> <span class="n">padding_mode</span> <span class="o">==</span> <span class="s1">&#39;constant&#39;</span> <span class="ow">and</span> <span class="n">padding_value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">other_padding</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">tensor</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># pad: (before, after) pairs starting from last dimension backward</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span>
+                  <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">width</span><span class="p">),</span>
+                  <span class="n">mode</span><span class="o">=</span><span class="n">padding_mode</span><span class="p">,</span>
+                  <span class="n">value</span><span class="o">=</span><span class="n">padding_value</span><span class="p">)</span>
+        <span class="n">other_padding</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">padding</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">conv2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                 <span class="n">filt</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">num_channels</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="n">other_padding</span><span class="p">,</span> <span class="n">padding</span><span class="p">),</span>
+                 <span class="n">stride</span><span class="o">=</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                 <span class="n">groups</span><span class="o">=</span><span class="n">num_channels</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">conv2d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                 <span class="n">filt</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">num_channels</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+                 <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="n">padding</span><span class="p">,</span> <span class="n">other_padding</span><span class="p">),</span>
+                 <span class="n">stride</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">stride</span><span class="p">),</span>
+                 <span class="n">groups</span><span class="o">=</span><span class="n">num_channels</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span></div>
+
+
+<div class="viewcode-block" id="imarraysc"><a class="viewcode-back" href="../../utils.html#torchray.utils.imarraysc">[docs]</a><span class="k">def</span> <span class="nf">imarraysc</span><span class="p">(</span><span class="n">tiles</span><span class="p">,</span>
+              <span class="n">spacing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+              <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+              <span class="n">lim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;lanczos&#39;</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Display or arrange an image or tensor batch as a mosaic.</span>
+
+<span class="sd">    The function displays the tensor `tiles` as a set of tiles. `tiles` has</span>
+<span class="sd">    shape :math:`K\times C\times H\times W` and the generated mosaic</span>
+<span class="sd">    is a *new* tensor with shape :math:`C\times (MH) \times (NW)` where</span>
+<span class="sd">    :math:`MN \geq K`.</span>
+
+<span class="sd">    Missing tiles are filled with zeros.</span>
+
+<span class="sd">    The range of each tile is individually scaled to the range [0, 1].</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tiles (:class:`torch.Tensor`): tensor to display or rearrange.</span>
+<span class="sd">        spacing (int, optional): thickness of the border (infilled</span>
+<span class="sd">            with zeros) around each tile. Default: ``0``.</span>
+<span class="sd">        quiet (bool, optional): If False, do not display the mosaic.</span>
+<span class="sd">            Default: ``False``.</span>
+<span class="sd">        lim (list, optional): maximum and minimum intensity value for</span>
+<span class="sd">            rescaling. Default: ``None``.</span>
+<span class="sd">        interpolation (str, optional): interpolation to use with</span>
+<span class="sd">            :func:`matplotlib.pyplot.imshow`. Default: ``&#39;lanczos&#39;``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        class:`torch.Tensor`: The rearranged tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">tiles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">num_cols</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">num</span><span class="p">))</span>
+    <span class="n">num_rows</span> <span class="o">=</span> <span class="p">(</span><span class="n">num</span> <span class="o">+</span> <span class="n">num_cols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">num_cols</span>
+    <span class="n">num_channels</span> <span class="o">=</span> <span class="n">tiles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">tiles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">tiles</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">mosaic</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_channels</span><span class="p">,</span>
+                         <span class="n">height</span> <span class="o">*</span> <span class="n">num_rows</span> <span class="o">+</span> <span class="n">spacing</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_rows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+                         <span class="n">width</span> <span class="o">*</span> <span class="n">num_cols</span> <span class="o">+</span> <span class="n">spacing</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_cols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num</span><span class="p">):</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">t</span> <span class="o">%</span> <span class="n">num_cols</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">t</span> <span class="o">//</span> <span class="n">num_cols</span>
+        <span class="n">mosaic</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">num_channels</span><span class="p">,</span>
+               <span class="n">v</span><span class="o">*</span><span class="p">(</span><span class="n">height</span><span class="o">+</span><span class="n">spacing</span><span class="p">):</span><span class="n">v</span><span class="o">*</span><span class="p">(</span><span class="n">height</span><span class="o">+</span><span class="n">spacing</span><span class="p">)</span><span class="o">+</span><span class="n">height</span><span class="p">,</span>
+               <span class="n">u</span><span class="o">*</span><span class="p">(</span><span class="n">width</span><span class="o">+</span><span class="n">spacing</span><span class="p">):</span><span class="n">u</span><span class="o">*</span><span class="p">(</span><span class="n">width</span><span class="o">+</span><span class="n">spacing</span><span class="p">)</span><span class="o">+</span><span class="n">width</span><span class="p">]</span> <span class="o">=</span> <span class="n">imsc</span><span class="p">(</span><span class="n">tiles</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
+                                                                 <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                                 <span class="n">lim</span><span class="o">=</span><span class="n">lim</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">imsc</span><span class="p">(</span><span class="n">mosaic</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

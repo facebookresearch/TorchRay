@@ -1,0 +1,510 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Utilities &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Benchmarking" href="benchmark.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Utilities</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="utilities">
+<h1>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-torchray.utils"></span><p>Utility functions.</p>
+<dl class="function">
+<dt id="torchray.utils.get_config">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#get_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the TorchRay config file.</p>
+<p>Read the config file from the current directory or the user’s home
+directory and return the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>configuration.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.get_device">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">get_device</code><span class="sig-paren">(</span><em class="sig-param">gpu=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#get_device"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.get_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the :class`torch.device` to use; specify device with <code class="xref py py-attr docutils literal notranslate"><span class="pre">gpu</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>gpu</strong> (<em>int</em><em>, </em><em>optional</em>) – Index of the GPU device; specify <code class="docutils literal notranslate"><span class="pre">None</span></code> to
+force CPU. Default: <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>device to use.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.device</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.im_to_numpy">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">im_to_numpy</code><span class="sig-paren">(</span><em class="sig-param">tensor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#im_to_numpy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.im_to_numpy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a tensor image to a NumPy image.</p>
+<p>The function converts the <span class="math notranslate nohighlight">\(K\times H\times W\)</span> tensor <code class="xref py py-attr docutils literal notranslate"><span class="pre">tensor</span></code>
+to a corresponding <span class="math notranslate nohighlight">\(H\times W\times K\)</span> NumPy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tensor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – input tensor.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>NumPy array.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.imarraysc">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">imarraysc</code><span class="sig-paren">(</span><em class="sig-param">tiles</em>, <em class="sig-param">spacing=0</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">lim=None</em>, <em class="sig-param">interpolation='lanczos'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#imarraysc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.imarraysc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display or arrange an image or tensor batch as a mosaic.</p>
+<p>The function displays the tensor <cite>tiles</cite> as a set of tiles. <cite>tiles</cite> has
+shape <span class="math notranslate nohighlight">\(K\times C\times H\times W\)</span> and the generated mosaic
+is a <em>new</em> tensor with shape <span class="math notranslate nohighlight">\(C\times (MH) \times (NW)\)</span> where
+<span class="math notranslate nohighlight">\(MN \geq K\)</span>.</p>
+<p>Missing tiles are filled with zeros.</p>
+<p>The range of each tile is individually scaled to the range [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tiles</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – tensor to display or rearrange.</p></li>
+<li><p><strong>spacing</strong> (<em>int</em><em>, </em><em>optional</em>) – thickness of the border (infilled
+with zeros) around each tile. Default: <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p><strong>quiet</strong> (<em>bool</em><em>, </em><em>optional</em>) – If False, do not display the mosaic.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>lim</strong> (<em>list</em><em>, </em><em>optional</em>) – maximum and minimum intensity value for
+rescaling. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>interpolation</strong> (<em>str</em><em>, </em><em>optional</em>) – interpolation to use with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.imshow()</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">'lanczos'</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>torch.Tensor</cite>: The rearranged tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.imread">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">imread</code><span class="sig-paren">(</span><em class="sig-param">file</em>, <em class="sig-param">as_pil=False</em>, <em class="sig-param">resize=None</em>, <em class="sig-param">to_rgb=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#imread"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.imread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read an image as a tensor.</p>
+<p>The function reads the image <code class="xref py py-attr docutils literal notranslate"><span class="pre">file</span></code> as a PyTorch tensor.
+<cite>file</cite> can also be an URL.</p>
+<p>To reshape the image use the option <code class="xref py py-attr docutils literal notranslate"><span class="pre">reshape</span></code>, passing the desired
+shape <code class="docutils literal notranslate"><span class="pre">(W,</span> <span class="pre">H)</span></code> as tuple. Passing an integer sets the shortest side to
+that length while preserving the aspect ratio.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>str</em>) – Path or ULR to the image.</p></li>
+<li><p><strong>resize</strong> (<em>float</em><em>, </em><em>int</em><em>, </em><em>tuple</em><em> or </em><em>list</em>) – Resize the image to this size.</p></li>
+<li><p><strong>as_pil</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, returns the PIL image instead of converting
+to a tensor.</p></li>
+<li><p><strong>to_rgb</strong> (<em>optional</em><em>, </em><em>bool</em>) – If <cite>True</cite>, convert the PIL image to RGB.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The image read as a <span class="math notranslate nohighlight">\(3\times H\times W\)</span> tensor in
+the [0, 1] range.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.imsc">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">imsc</code><span class="sig-paren">(</span><em class="sig-param">img</em>, <em class="sig-param">*args</em>, <em class="sig-param">quiet=False</em>, <em class="sig-param">lim=None</em>, <em class="sig-param">interpolation='lanczos'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#imsc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.imsc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rescale and displays an image represented as a img.</p>
+<p>The function scales the img <code class="xref py py-attr docutils literal notranslate"><span class="pre">im</span></code> to the [0 ,1] range.
+The img is assumed to have shape <span class="math notranslate nohighlight">\(3\times H\times W\)</span> (RGB)
+<span class="math notranslate nohighlight">\(1\times H\times W\)</span> (grayscale).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">PIL.Image</span></code>) – image.</p></li>
+<li><p><strong>quiet</strong> (<em>bool</em><em>, </em><em>optional</em>) – if False, do not display image.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>lim</strong> (<em>list</em><em>, </em><em>optional</em>) – maximum and minimum intensity value for
+rescaling. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>interpolation</strong> (<em>str</em><em>, </em><em>optional</em>) – The interpolation mode to use with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.imshow()</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">'lanczos'</span></code> or
+<code class="docutils literal notranslate"><span class="pre">'nearest'</span></code>). Default: <code class="docutils literal notranslate"><span class="pre">'lanczos'</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Rescaled image img.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.imsmooth">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">imsmooth</code><span class="sig-paren">(</span><em class="sig-param">tensor</em>, <em class="sig-param">sigma</em>, <em class="sig-param">stride=1</em>, <em class="sig-param">padding=0</em>, <em class="sig-param">padding_mode='constant'</em>, <em class="sig-param">padding_value=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#imsmooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.imsmooth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a 2D Gaussian filter to a tensor.</p>
+<p>The 2D filter itself is implementing by separating the 2D convolution in
+two 1D convolutions, first along the vertical direction and then along
+the horizontal one. Each 1D Gaussian kernel is given by:</p>
+<div class="math notranslate nohighlight">
+\[f_i \propto \exp\left(-\frac{1}{2} \frac{i^2}{\sigma^2} \right),
+    ~~~ i \in \{-W,\dots,W\},
+    ~~~ W = \lceil 4\sigma \rceil.\]</div>
+<p>This kernel is normalized to sum to one exactly. Given the latter, the
+function calls <cite>torch.nn.functional.conv2d</cite>
+to perform the actual convolution. Various padding parameters and the
+stride are passed to the latter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tensor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – <span class="math notranslate nohighlight">\(N\times C\times H\times W\)</span>
+image tensor.</p></li>
+<li><p><strong>sigma</strong> (<em>float</em>) – standard deviation of the Gaussian kernel.</p></li>
+<li><p><strong>stride</strong> (<em>int</em><em>, </em><em>optional</em>) – subsampling factor. Default: <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><strong>padding</strong> (<em>int</em><em>, </em><em>optional</em>) – extra padding. Default: <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p><strong>padding_mode</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">'constant'</span></code>, <code class="docutils literal notranslate"><span class="pre">'reflect'</span></code> or
+<code class="docutils literal notranslate"><span class="pre">'replicate'</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">'constant'</span></code>.</p></li>
+<li><p><strong>padding_value</strong> (<em>float</em><em>, </em><em>optional</em>) – constant value for the <cite>constant</cite>
+padding mode. Default: <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><span class="math notranslate nohighlight">\(N\times C\times H\times W\)</span> tensor with
+the smoothed images.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.is_url">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">is_url</code><span class="sig-paren">(</span><em class="sig-param">obj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#is_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.is_url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if an object is an URL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> (<em>object</em>) – object to test.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="xref py py-attr docutils literal notranslate"><span class="pre">x</span></code> is an URL string; otherwise <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.pil_to_tensor">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">pil_to_tensor</code><span class="sig-paren">(</span><em class="sig-param">pil_image</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#pil_to_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.pil_to_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a PIL image to a tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pil_image</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">PIL.Image</span></code>) – PIL image.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the image as a <span class="math notranslate nohighlight">\(3\times H\times W\)</span> tensor
+in the [0, 1] range.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.resample">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">resample</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">target_size</em>, <em class="sig-param">transform</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#resample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.resample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spatially resample a tensor.</p>
+<p>The function resamples the <code class="xref py py-attr docutils literal notranslate"><span class="pre">source</span></code> tensor generating a
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code> tensors of size <code class="xref py py-attr docutils literal notranslate"><span class="pre">target_size</span></code>. Resampling uses the
+transform <code class="xref py py-attr docutils literal notranslate"><span class="pre">transform</span></code>, specified as a <span class="math notranslate nohighlight">\(2\times 2\)</span> matrix in the
+form</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{bmatrix}
+s_u &amp; t_u\\
+s_v &amp; t_v
+\end{bmatrix}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(s_u\)</span> is the scaling factor along the horizontal spatial
+direction, <span class="math notranslate nohighlight">\(t_u\)</span> the horizontal offset, and <span class="math notranslate nohighlight">\(s_v, t_v\)</span> the
+corresponding quantity for the vertical direction.</p>
+<p>Internally, the function uses <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.nn.functional.grid_sample()</span></code> with
+bilinear interpolation and zero padding.</p>
+<p>The transformation defines the forward
+mapping, so that a pixel <span class="math notranslate nohighlight">\((u,v)\)</span> in the source tensro is mapped to
+pixel <span class="math notranslate nohighlight">\(u' = s_u  u + t_u, v' = s_v v + tv\)</span>.</p>
+<p>The reference frames are defined as follows. Pixels are unit squares, so
+that a <span class="math notranslate nohighlight">\(H\times W\)</span> tensor maps to the rectangle <span class="math notranslate nohighlight">\([0, W) \times
+[0, H)\)</span>. Hence element <span class="math notranslate nohighlight">\(x_{ncij}\)</span> of a tensor <span class="math notranslate nohighlight">\(x\)</span> maps
+to a unit square whose center is <span class="math notranslate nohighlight">\((u,v) = (i + 1/2, j+1/2)\)</span>.</p>
+<p class="rubric">Example</p>
+<p>In order to stretch an <span class="math notranslate nohighlight">\(H \times W\)</span> source tensor to a target
+<span class="math notranslate nohighlight">\(H' \times W'\)</span> tensor, one would use the transformation matrix</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{bmatrix}
+W'/W &amp; 0\\
+H'/H &amp; 0\\
+\end{bmatrix}\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – <span class="math notranslate nohighlight">\(N\times C\times H\times W\)</span>
+tensor.</p></li>
+<li><p><strong>target_size</strong> (<em>tuple of int</em>) – target size.</p></li>
+<li><p><strong>transform</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – <span class="math notranslate nohighlight">\(2\times 2\)</span> transformation
+tensor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>resampled tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.tensor_to_im">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">tensor_to_im</code><span class="sig-paren">(</span><em class="sig-param">tensor</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#tensor_to_im"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.tensor_to_im" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshape a tensor as a grayscale image stack.</p>
+<p>The function reshapes the tensor <code class="xref py py-attr docutils literal notranslate"><span class="pre">x</span></code> of size
+<span class="math notranslate nohighlight">\(N\times K\times H\times W\)</span>
+to have shape <span class="math notranslate nohighlight">\((NK)\times 1\times H\times W\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tensor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code>) – tensor to rearrange.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Reshaped tensor.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="torchray.utils.xmkdir">
+<code class="sig-prename descclassname">torchray.utils.</code><code class="sig-name descname">xmkdir</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torchray/utils.html#xmkdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torchray.utils.xmkdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a directory path recursively.</p>
+<p>The function creates <code class="xref py py-attr docutils literal notranslate"><span class="pre">path</span></code> if the directory does not exist.</p>
+<dl class="simple">
+<dt>Args::</dt><dd><p>path (str): path to create.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="benchmark.html" class="btn btn-neutral float-left" title="Benchmarking" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

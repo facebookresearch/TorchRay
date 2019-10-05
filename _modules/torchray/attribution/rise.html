@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>torchray.attribution.rise &mdash; TorchRay beta documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/equations.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> TorchRay
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../attribution.html">Attribution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmark.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">TorchRay</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>torchray.attribution.rise</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for torchray.attribution.rise</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides an implementation of the *RISE* method of [RISE]_ for</span>
+<span class="sd">saliency visualization. This is given by the :func:`rise` function, which</span>
+<span class="sd">can be used as follows:</span>
+
+<span class="sd">.. literalinclude:: ../examples/rise.py</span>
+<span class="sd">    :language: python</span>
+<span class="sd">    :linenos:</span>
+
+<span class="sd">References:</span>
+
+<span class="sd">    .. [RISE] V. Petsiuk, A. Das and K. Saenko</span>
+<span class="sd">              *RISE: Randomized Input Sampling for Explanation of Black-box</span>
+<span class="sd">              Models,*</span>
+<span class="sd">              BMVC 2018,</span>
+<span class="sd">              `&lt;https://arxiv.org/pdf/1806.07421.pdf&gt;`__.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;rise&#39;</span><span class="p">,</span> <span class="s1">&#39;rise_class&#39;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">.common</span> <span class="k">import</span> <span class="n">resize_saliency</span>
+
+
+<span class="k">def</span> <span class="nf">_upsample_reflect</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">interpolate_mode</span><span class="o">=</span><span class="s2">&quot;bilinear&quot;</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Upsample 4D :class:`torch.Tensor` with reflection padding.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (:class:`torch.Tensor`): 4D tensor to interpolate.</span>
+<span class="sd">        size (int or list or tuple of ints): target size</span>
+<span class="sd">        interpolate_mode (str): mode to pass to</span>
+<span class="sd">            :function:`torch.nn.functional.interpolate` function call</span>
+<span class="sd">            (default: &quot;bilinear&quot;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: upsampled tensor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check and get input size.</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+    <span class="n">orig_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+
+    <span class="c1"># Check target size.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+    <span class="c1"># Ensure upsampling.</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o_s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">orig_size</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">o_s</span> <span class="o">&lt;=</span> <span class="n">size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># Get size of input cell when interpolated.</span>
+    <span class="n">cell_size</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">s</span> <span class="o">/</span> <span class="n">orig_size</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">size</span><span class="p">)]</span>
+
+    <span class="c1"># Get size of interpolated input with padding.</span>
+    <span class="n">pad_size</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">cell_size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">orig_size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">orig_size</span><span class="p">))]</span>
+
+    <span class="c1"># Pad input with reflection padding.</span>
+    <span class="n">x_padded</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;reflect&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Interpolated padded input.</span>
+    <span class="n">x_up</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">x_padded</span><span class="p">,</span>
+                         <span class="n">pad_size</span><span class="p">,</span>
+                         <span class="n">mode</span><span class="o">=</span><span class="n">interpolate_mode</span><span class="p">,</span>
+                         <span class="n">align_corners</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Slice interpolated input to size.</span>
+    <span class="n">x_new</span> <span class="o">=</span> <span class="n">x_up</span><span class="p">[:,</span>
+                 <span class="p">:,</span>
+                 <span class="n">cell_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">cell_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                 <span class="n">cell_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">cell_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">x_new</span>
+
+
+<div class="viewcode-block" id="rise_class"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.rise.rise_class">[docs]</a><span class="k">def</span> <span class="nf">rise_class</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Class-specific RISE.</span>
+
+<span class="sd">    This function has the all the arguments of :func:`rise` with the following</span>
+<span class="sd">    additional argument and returns a class-specific saliency map for the</span>
+<span class="sd">    given :attr:`target` class(es).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        target (int, :class:`torch.Tensor`, list, or :class:`np.ndarray`):</span>
+<span class="sd">            target label(s) that can be cast to :class:`torch.long`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">saliency</span> <span class="o">=</span> <span class="n">rise</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">saliency</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">saliency</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">target</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">long</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">saliency</span><span class="p">)</span>
+
+    <span class="n">class_saliency</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">saliency</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">target</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">output_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">saliency</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">output_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">class_saliency</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="n">output_shape</span>
+
+    <span class="k">return</span> <span class="n">class_saliency</span></div>
+
+
+<div class="viewcode-block" id="rise"><a class="viewcode-back" href="../../../attribution.html#torchray.attribution.rise.rise">[docs]</a><span class="k">def</span> <span class="nf">rise</span><span class="p">(</span><span class="n">model</span><span class="p">,</span>
+         <span class="nb">input</span><span class="p">,</span>
+         <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+         <span class="n">num_masks</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span>
+         <span class="n">num_cells</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+         <span class="n">filter_masks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+         <span class="n">p</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+         <span class="n">resize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+         <span class="n">resize_mode</span><span class="o">=</span><span class="s1">&#39;bilinear&#39;</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;RISE.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (:class:`torch.nn.Module`): a model.</span>
+<span class="sd">        input (:class:`torch.Tensor`): input tensor.</span>
+<span class="sd">        seed (int, optional): manual seed used to generate random numbers.</span>
+<span class="sd">            Default: ``0``.</span>
+<span class="sd">        num_masks (int, optional): number of RISE random masks to use.</span>
+<span class="sd">            Default: ``8000``.</span>
+<span class="sd">        num_cells (int, optional): number of cells for one spatial dimension</span>
+<span class="sd">            in low-res RISE random mask. Default: ``7``.</span>
+<span class="sd">        filter_masks (:class:`torch.Tensor`, optional): If given, use the</span>
+<span class="sd">            provided pre-computed filter masks. Default: ``None``.</span>
+<span class="sd">        batch_size (int, optional): batch size to use. Default: ``128``.</span>
+<span class="sd">        p (float, optional): with prob p, a low-res cell is set to 0;</span>
+<span class="sd">            otherwise, it&#39;s 1. Default: ``0.5``.</span>
+<span class="sd">        resize (bool or tuple of ints, optional): If True, resize saliency map</span>
+<span class="sd">            to size of :attr:`input`. If False, don&#39;t resize. If (width,</span>
+<span class="sd">            height) tuple, resize to (width, height). Default: ``False``.</span>
+<span class="sd">        resize_mode (str, optional): If resize is not None, use this mode for</span>
+<span class="sd">            the resize function. Default: ``&#39;bilinear&#39;``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`torch.Tensor`: RISE saliency map.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="c1"># Get device of input (i.e., GPU).</span>
+        <span class="n">dev</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">device</span>
+
+        <span class="c1"># Initialize saliency mask and mask normalization term.</span>
+        <span class="n">input_shape</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">saliency_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_shape</span><span class="p">)</span>
+
+        <span class="n">height</span> <span class="o">=</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">num_classes</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">saliency_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_classes</span>
+        <span class="n">saliency</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">saliency_shape</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+
+        <span class="c1"># Number of spatial dimensions.</span>
+        <span class="n">nsd</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="k">assert</span> <span class="n">nsd</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="c1"># Spatial size of low-res grid cell.</span>
+        <span class="n">cell_size</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">s</span> <span class="o">/</span> <span class="n">num_cells</span><span class="p">))</span>
+                           <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">input_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:]])</span>
+
+        <span class="c1"># Spatial size of upsampled mask with buffer (input size + cell size).</span>
+        <span class="n">up_size</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">2</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">cell_size</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nsd</span><span class="p">)])</span>
+
+        <span class="c1"># Save current random number generator state.</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_rng_state</span><span class="p">()</span>
+
+        <span class="c1"># Set seed.</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">filter_masks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">filter_masks</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_masks</span>
+
+        <span class="n">num_chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_masks</span> <span class="o">+</span> <span class="n">batch_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">batch_size</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_chunks</span><span class="p">):</span>
+            <span class="c1"># Generate RISE random masks on the fly.</span>
+            <span class="n">mask_bs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">num_masks</span> <span class="o">-</span> <span class="n">batch_size</span> <span class="o">*</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">filter_masks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Generate low-res, random binary masks.</span>
+                <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">mask_bs</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="p">((</span><span class="n">num_cells</span><span class="p">,)</span> <span class="o">*</span> <span class="n">nsd</span><span class="p">),</span>
+                                   <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+
+                <span class="c1"># Upsample low-res masks to input shape + buffer.</span>
+                <span class="n">masks_up</span> <span class="o">=</span> <span class="n">_upsample_reflect</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">up_size</span><span class="p">)</span>
+
+                <span class="c1"># Save final RISE masks with random shift.</span>
+                <span class="n">masks</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">mask_bs</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">input_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">device</span><span class="o">=</span><span class="n">dev</span><span class="p">)</span>
+                <span class="n">shift_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">cell_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="p">(</span><span class="n">mask_bs</span><span class="p">,),</span>
+                                        <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+                <span class="n">shift_y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">cell_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                        <span class="p">(</span><span class="n">mask_bs</span><span class="p">,),</span>
+                                        <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mask_bs</span><span class="p">):</span>
+                    <span class="n">masks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">masks_up</span><span class="p">[</span><span class="n">i</span><span class="p">,</span>
+                                        <span class="p">:,</span>
+                                        <span class="n">shift_x</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">shift_x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">height</span><span class="p">,</span>
+                                        <span class="n">shift_y</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">shift_y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">width</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">masks</span> <span class="o">=</span> <span class="n">filter_masks</span><span class="p">[</span>
+                    <span class="n">chunk</span> <span class="o">*</span> <span class="n">batch_size</span><span class="p">:</span><span class="n">chunk</span> <span class="o">*</span> <span class="n">batch_size</span> <span class="o">+</span> <span class="n">mask_bs</span><span class="p">]</span>
+
+            <span class="c1"># Accumulate saliency mask.</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">inp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">input</span><span class="p">):</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">masks</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                    <span class="c1"># TODO: Consider handling FC outputs more flexibly.</span>
+                    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+                    <span class="k">assert</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">sal</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                                   <span class="n">masks</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">mask_bs</span><span class="p">,</span> <span class="n">height</span> <span class="o">*</span> <span class="n">width</span><span class="p">))</span>
+                <span class="n">sal</span> <span class="o">=</span> <span class="n">sal</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">num_classes</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">))</span>
+                <span class="n">saliency</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">saliency</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">sal</span>
+
+        <span class="c1"># Normalize saliency mask.</span>
+        <span class="n">saliency</span> <span class="o">/=</span> <span class="n">num_masks</span>
+
+        <span class="c1"># Restore original random number generator state.</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">set_rng_state</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+        <span class="c1"># Resize saliency mask if needed.</span>
+        <span class="n">saliency</span> <span class="o">=</span> <span class="n">resize_saliency</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span>
+                                   <span class="n">saliency</span><span class="p">,</span>
+                                   <span class="n">resize</span><span class="p">,</span>
+                                   <span class="n">mode</span><span class="o">=</span><span class="n">resize_mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">saliency</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright TorchRay Contributors
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
