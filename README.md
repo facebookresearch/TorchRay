@@ -41,7 +41,7 @@ plot_example(x, saliency, 'grad-cam backprop', category_id)
 
 TorchRay requires:
 
-* Python 3.4 or greater
+* Python 3.6 or greater
 * pytorch 1.1.0 or greater
 * matplotlib
 
