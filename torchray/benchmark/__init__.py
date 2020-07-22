@@ -77,7 +77,7 @@ def plot_example(input,
                  saliency,
                  method,
                  category_id,
-                 show_plot=False,
+                 show_plot=True,
                  save_path=None):
     """Plot an example.
 
